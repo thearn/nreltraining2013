@@ -1,0 +1,3 @@
+graft src/nrelclass2013/sphinx_build/html
+recursive-include src/nrelclass2013/test *.py
+
