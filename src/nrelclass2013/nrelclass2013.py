@@ -70,12 +70,14 @@ class BladeElement(Component):
     delta_Q = Float(iotype="out", desc="torque on the blade element", units="N*m")
     a = Float(iotype="out", desc="converged value for axial inflow factor")
     b = Float(iotype="out", desc="converged value for radial inflow factor")
+    lambda_r = Float(iotype="out", desc="local tip speed ratio")
 
     def execute(self):
         result = fsolve(self._iter_inflow_factor, [self.a_init, self.b_init])
         #result = self._iter_inflow_factor([self.a_init,self.b_init])
         self.a = result[0]
         self.b = result[1]
+        self.lambda_r = self.omega*self.r/self.V_inf
 
     def _iter_inflow_factor(self, X):
         """performs one pass through the calculation of inflow factors"""
@@ -121,14 +123,16 @@ class BEMPerfData(VariableTree):
     net_thrust = Float(desc="net axial thrust", units="N")
     C_T = Float(desc="thrust coefficient")
     net_torque = Float(desc="net torque", units="N*m")
+    C_Q = Float(desc="torque coefficient")
     C_P = Float(desc="power coefficient")
     J = Float(desc="advance ratio")
     eta = Float(desc="turbine efficiency")
 
+
 class BEMPerf(Component):
     """collects data from set of BladeElements and calculates aggregate values"""
 
-    r = Float(.08, iotype="in", desc="mean radius of the blade element", units="m")
+    r = Float(.8, iotype="in", desc="tip radius of the rotor", units="m")
     rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
     V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
@@ -159,13 +163,14 @@ class BEMPerf(Component):
 
         _diam = 2*self.r
         _n = self.rpm/60  #rotations per second
+        print _diam
         norm = self.rho*(_n**2)*(_diam**4)
 
         self.data.C_T = self.data.net_thrust/norm
-        self.data.C_P = self.data.net_torque/(norm*_diam)
+        self.data.C_Q = self.data.net_torque/(norm*_diam)
+        self.data.C_P = self.data.C_Q*2*pi
         self.data.J = self.V_inf/(_n*_diam)
-        self.data.eta = self.data.C_T/self.data.C_P*self.data.J/(2*pi)
-
+        self.data.eta = self.data.C_T/self.data.C_Q*self.data.J/(2*pi)
 
 
 class SmallBEM(Assembly):
@@ -196,16 +201,16 @@ class SmallBEM(Assembly):
 
     def configure(self):
         self.add('radius_dist', LinearDistribution(n=3, units="m"))
-        self.connect('r_hub', 'radius_dist.in_0')
-        self.connect('r_tip', 'radius_dist.in_1')
+        self.connect('r_hub', 'radius_dist.start')
+        self.connect('r_tip', 'radius_dist.end')
 
         self.add('chord_dist', LinearDistribution(n=3, units="m"))
-        self.connect('chord_hub', 'chord_dist.in_0')
-        self.connect('chord_tip', 'chord_dist.in_1')
+        self.connect('chord_hub', 'chord_dist.start')
+        self.connect('chord_tip', 'chord_dist.end')
 
         self.add('twist_dist', LinearDistribution(n=3, units="deg"))
-        self.connect('twist_hub', 'twist_dist.in_0')
-        self.connect('twist_tip', 'twist_dist.in_1')
+        self.connect('twist_hub', 'twist_dist.start')
+        self.connect('twist_tip', 'twist_dist.end')
         self.connect('pitch', 'twist_dist.offset')
 
         self.driver.workflow.add('radius_dist')
@@ -218,6 +223,10 @@ class SmallBEM(Assembly):
         #self.connect('perf.eta','eta')
         #self.connect('perf.data','data')
         self.create_passthrough('perf.data')
+        self.connect('r_tip', 'perf.r')
+        self.connect('rho', 'perf.rho')
+        self.connect('rpm', 'perf.rpm')
+        self.connect('V_inf', 'perf.V_inf')
 
         self.add('BE0', BladeElement())
         self.driver.workflow.add('BE0')
@@ -265,24 +274,25 @@ class SmallBEM(Assembly):
 class BEM(SmallBEM):
     """Blade Rotor with user specified number BladeElements"""
 
-    def __init__(self, n_elements=10):
+    def __init__(self, n_elements=11):
         self._n_elements = n_elements
+        super(BEM, self).__init__()
 
     def configure(self):
 
         n_elements = self._n_elements
 
         self.add('radius_dist', LinearDistribution(n=n_elements, units="m"))
-        self.connect('r_hub', 'radius_dist.in_0')
-        self.connect('r_tip', 'radius_dist.in_1')
+        self.connect('r_hub', 'radius_dist.start')
+        self.connect('r_tip', 'radius_dist.end')
 
         self.add('chord_dist', LinearDistribution(n=n_elements, units="m"))
-        self.connect('chord_hub', 'chord_dist.in_0')
-        self.connect('chord_tip', 'chord_dist.in_1')
+        self.connect('chord_hub', 'chord_dist.start')
+        self.connect('chord_tip', 'chord_dist.end')
 
         self.add('twist_dist', LinearDistribution(n=n_elements, units="deg"))
-        self.connect('twist_hub', 'twist_dist.in_0')
-        self.connect('twist_tip', 'twist_dist.in_1')
+        self.connect('twist_hub', 'twist_dist.start')
+        self.connect('twist_tip', 'twist_dist.end')
         self.connect('pitch', 'twist_dist.offset')
 
         self.driver.workflow.add('radius_dist')
@@ -290,6 +300,10 @@ class BEM(SmallBEM):
 
         self.add('perf', BEMPerf(n=n_elements))
         self.create_passthrough('perf.data')
+        self.connect('r_tip', 'perf.r')
+        self.connect('rho', 'perf.rho')
+        self.connect('rpm', 'perf.rpm')
+        self.connect('V_inf', 'perf.V_inf')
 
         self._elements = []
         for i in range(n_elements):
@@ -309,3 +323,8 @@ class BEM(SmallBEM):
             self.connect(name+'.delta_Q', 'perf.delta_Q[%d]'%i)
 
         self.driver.workflow.add('perf')
+
+if __name__ == "__main__":
+    b = BEM()
+    b.run()
+    
