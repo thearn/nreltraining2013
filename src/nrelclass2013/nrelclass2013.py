@@ -163,7 +163,6 @@ class BEMPerf(Component):
 
         _diam = 2*self.r
         _n = self.rpm/60  #rotations per second
-        print _diam
         norm = self.rho*(_n**2)*(_diam**4)
 
         self.data.C_T = self.data.net_thrust/norm
@@ -181,7 +180,7 @@ class SmallBEM(Assembly):
     twist_hub = Float(65.0, iotype="in", desc="twist angle at the hub radius", units="deg")
     chord_hub = Float(.1, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     r_tip = Float(0.8, iotype="in", desc="blade tip radius", units="m")
-    twist_tip = Float(25.0, iotype="in", desc="twist angle at the tip radius", units="deg", low=10)
+    twist_tip = Float(25.0, iotype="in", desc="twist angle at the tip radius", units="deg")
     chord_tip = Float(.1, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     pitch = Float(0, iotype="in", desc="overall blade pitch", units="deg")
     rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
@@ -327,4 +326,3 @@ class BEM(SmallBEM):
 if __name__ == "__main__":
     b = BEM()
     b.run()
-    
