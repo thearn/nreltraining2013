@@ -45,78 +45,6 @@ class ActuatorDisk(Component):
         self.power = self.Cp*q*self.Area
 
 
-class BladeElement(Component):
-    """Calculations for a single radial slice of a rotor blade"""
-
-    #inputs
-    a_init = Float(0.1, iotype="in", desc="initial guess for axial inflow factor", low=0, high=1)
-    b_init = Float(0.01, iotype="in", desc="initial guess for radial inflow factor", low=0, high=1)
-    rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
-    r = Float(.08, iotype="in", desc="mean radius of the blade element", units="m")
-    dr = Float(.072, iotype="in", desc="with of the blade element", units="m")
-    theta = Float(1.135, iotype="in", desc="local pitch angle", units="rad", low=0, high=pi/2)
-    chord = Float(.1, iotype="in", desc="local chord length", units="m", low=0)
-
-    rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
-    V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
-
-    #outputs
-    V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
-    V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
-    V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
-    omega = Float(iotype="out", desc="average angular velocity for element", units="rad/s")
-    alpha = Float(iotype="out", desc="local angle of attack", units="rad")
-    delta_T = Float(iotype="out", desc="thrust on the blade element", units="N")
-    delta_Q = Float(iotype="out", desc="torque on the blade element", units="N*m")
-    a = Float(iotype="out", desc="converged value for axial inflow factor")
-    b = Float(iotype="out", desc="converged value for radial inflow factor")
-    lambda_r = Float(iotype="out", desc="local tip speed ratio")
-
-    def execute(self):
-        result = fsolve(self._iter_inflow_factor, [self.a_init, self.b_init])
-        #result = self._iter_inflow_factor([self.a_init,self.b_init])
-        self.a = result[0]
-        self.b = result[1]
-        self.lambda_r = self.omega*self.r/self.V_inf
-
-    def _iter_inflow_factor(self, X):
-        """performs one pass through the calculation of inflow factors"""
-
-        a, b = X[0], X[1]
-        self.omega = self.rpm*2*pi/60.0
-        omega_r = self.omega*self.r
-
-        #using inflow factors, solve for phi and alpha
-        self.V_0 = self.V_inf + a*self.V_inf
-        self.V_2 = omega_r-b*omega_r
-        self.V_1 = (self.V_0**2+self.V_2**2)**.5
-        phi = atan2(self.V_0, self.V_2)
-        self.alpha = self.theta-phi
-
-        #given alpha, solve for element thrust and torque
-        q_c = (self.rho*self.V_1**2)*self.chord*self.dr
-        cos_phi = cos(phi)
-        sin_phi = sin(phi)
-        #C_L = self.alpha*2*pi
-        C_L = 6.2*self.alpha
-        C_D = 0.008-0.003*C_L+0.01*C_L**2
-        self.delta_T = q_c*(C_L*cos_phi-C_D*sin_phi)
-        self.delta_Q = q_c*self.r*(C_L*sin_phi+C_D*cos_phi)
-
-        #given thrust and torque, calc new a and b
-
-        const = self.dr*(self.rho*4*pi*self.r)
-        #new_a = (-const+(const**2+4*const*self.delta_T)**.5)/(-2*self.delta_T)
-        #new_b = self.delta_Q/(const*self.r*self.r*(1+new_a)*self.omega)
-
-        tem1=self.delta_T/(const*(self.V_inf**2)*(1+a))
-        tem2=self.delta_Q/(const*(self.r**2)*self.V_inf*(1+a)*self.omega)
-        new_a=0.5*(a+tem1)
-        new_b=0.5*(b+tem2)
-
-        return (a-new_a, b-new_b)
-
-
 class BEMPerfData(VariableTree):
     """Container that holds all rotor performance data"""
 
@@ -323,6 +251,98 @@ class BEM(SmallBEM):
 
         self.driver.workflow.add('perf')
 
+class BladeElement(Component):
+    """Calculations for a single radial slice of a rotor blade"""
+
+    #inputs
+    a_init = Float(0.3543, iotype="in", desc="initial guess for axial inflow factor")
+    b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
+    rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
+    r = Float(.08, iotype="in", desc="mean radius of the blade element", units="m")
+    dr = Float(.072, iotype="in", desc="width of the blade element", units="m")
+    theta = Float(1.616, iotype="in", desc="local pitch angle", units="rad")
+    chord = Float(.1, iotype="in", desc="local chord length", units="m", low=0)
+    sigma = Float(0.01814, iotype="in", desc="local solidity")
+
+    rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
+    V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
+
+    #outputs
+    V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
+    V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
+    V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
+    omega = Float(iotype="out", desc="average angular velocity for element", units="rad/s")
+    alpha = Float(iotype="out", desc="local angle of attack", units="rad")
+    delta_T = Float(iotype="out", desc="thrust on the blade element", units="N")
+    delta_Q = Float(iotype="out", desc="torque on the blade element", units="N*m")
+    a = Float(iotype="out", desc="converged value for axial inflow factor")
+    b = Float(iotype="out", desc="converged value for radial inflow factor")
+    lambda_r = Float(8, iotype="out", desc="local tip speed ratio")
+    phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
+
+    def Coeff_lookup(self, i):
+        ''' #piecewise linear interpolation for paper 
+        angles_array_CL = np.array([0,5,7.9289,8.0510,10,14,\
+            15,20,25,30,35,40])
+        C_L_array = np.array([0,0.6,1.,0.6763,1.025,1.3,0.8,\
+            0.7,0.8,.95,1.1,1.15])      
+
+        angles_array_CD = np.array([0,10,20,30,40])
+        C_D_array = np.array([0.,0.,0.3,0.6,1.])       
+
+        idx= angles_array_CL.searchsorted(i)-1
+        slope =  (C_L_array[idx+1]-C_L_array[idx])/(angles_array_CL[idx+1]-angles_array_CL[idx])
+        C_L = slope*(i-angles_array_CL[idx]) + C_L_array[idx]
+
+        idx= angles_array_CD.searchsorted(i)-1
+        slope =  (C_D_array[idx+1]-C_D_array[idx])/(angles_array_CD[idx+1]-angles_array_CD[idx])
+        C_D = slope*(i-angles_array_CD[idx]) + C_D_array[idx]
+        return C_D, C_L
+        '''
+        #polynomial interpolation from matlab code
+        cl=6.2*i
+        cd=0.008-0.003*cl+0.01*cl**2
+        return cd, cl
+
+
+    def execute(self):    
+        self.omega = self.rpm*2*pi/60.0
+        omega_r = self.omega*self.r
+        self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
+        result = fsolve(self.iteration_, [self.a_init, self.b_init])
+        self.a = result[0]
+        self.b = result[1]
+        self.V_0 = self.V_inf + self.a*self.V_inf
+        self.V_2 = omega_r-self.b*omega_r
+        self.V_1 = (self.V_0**2+self.V_2**2)**.5
+
+        q_c = (self.rho*self.V_1**2)*self.chord*self.dr
+        cos_phi = cos(self.phi)
+        sin_phi = sin(self.phi)
+        C_D, C_L = self.Coeff_lookup(self.alpha)
+        self.delta_T = q_c*(C_L*cos_phi-C_D*sin_phi)
+        self.delta_Q = q_c*self.r*(C_L*sin_phi+C_D*cos_phi)       
+
+    def iteration_(self,X):
+        self.phi =  np.arctan(self.lambda_r* (1+X[1]) / (1-X[0]) )
+        self.alpha = self.theta - self.phi
+        C_D, C_L = self.Coeff_lookup(self.alpha)
+        self.a = 1./(1 + 4.*(np.cos(self.phi)**2)/(self.sigma*C_L*np.sin(self.phi)))
+        self.b = (self.sigma*C_L) / (4* self.lambda_r * np.cos(self.phi)) * (1 - self.a)
+
+        return (X[0]-self.a), (X[1]-self.b)
+
 if __name__ == "__main__":
+    '''
+    blade = BladeElement()
+    blade.execute()
+    print blade.a, blade.b
+    print blade.delta_Q, blade.delta_T
+    '''
+    
     b = BEM()
     b.run()
+    print b.perf.data.eta
+    
+
+
