@@ -104,19 +104,19 @@ class SmallBEM(Assembly):
     """Blade Rotor with 3 BladeElements"""
 
     #physical properties inputs
-    r_hub = Float(0.08, iotype="in", desc="blade hub radius", units="m", low=0)
-    twist_hub = Float(65.0, iotype="in", desc="twist angle at the hub radius", units="deg")
-    chord_hub = Float(.1, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
-    r_tip = Float(0.8, iotype="in", desc="blade tip radius", units="m")
-    twist_tip = Float(25.0, iotype="in", desc="twist angle at the tip radius", units="deg")
-    chord_tip = Float(.1, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
+    r_hub = Float(0.2, iotype="in", desc="blade hub radius", units="m", low=0)
+    twist_hub = Float(61.0, iotype="in", desc="twist angle at the hub radius", units="deg")
+    chord_hub = Float(.7, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
+    r_tip = Float(5, iotype="in", desc="blade tip radius", units="m")
+    twist_tip = Float(92.58, iotype="in", desc="twist angle at the tip radius", units="deg")
+    chord_tip = Float(.187, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     pitch = Float(0, iotype="in", desc="overall blade pitch", units="deg")
-    rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
+    rpm = Float(107, iotype="in", desc="rotations per minute", low=0, units="min**-1")
     n_B = Int(3, iotype="in", desc="number of blades", low=1)
 
     #wind condition inputs
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
-    V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
+    V_inf = Float(7., iotype="in", desc="free stream air velocity", units="m/s")
 
     #outputs
     #thrust = Float(iotype="out",desc="net axial thrust", units="N")
@@ -157,7 +157,7 @@ class SmallBEM(Assembly):
 
         self.add('BE0', BladeElement())
         self.driver.workflow.add('BE0')
-        self.BEO.B = 3
+        self.BE0.B = 3
         self.connect('radius_dist.output[0]', 'BE0.r')
         self.connect('radius_dist.delta', 'BE0.dr')
         self.connect('twist_dist.output[0]', 'BE0.theta')
@@ -204,7 +204,7 @@ class SmallBEM(Assembly):
 class BEM(SmallBEM):
     """Blade Rotor with user specified number BladeElements"""
 
-    def __init__(self, n_elements=11):
+    def __init__(self, n_elements=6):
         self._n_elements = n_elements
         super(BEM, self).__init__()
 
@@ -241,7 +241,6 @@ class BEM(SmallBEM):
             self._elements.append(name)
             self.add(name, BladeElement())
             self.driver.workflow.add(name)
-            exec("self."+name+".B = "+str(n_elements))
             self.connect('radius_dist.output[%d]'%i, name+'.r')
             self.connect('radius_dist.delta', name+'.dr')
             self.connect('twist_dist.output[%d]'%i, name+'.theta')
@@ -261,15 +260,15 @@ class BladeElement(Component):
     #inputs
     a_init = Float(0.3543, iotype="in", desc="initial guess for axial inflow factor")
     b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
-    rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
-    r = Float(.08, iotype="in", desc="mean radius of the blade element", units="m")
-    dr = Float(.072, iotype="in", desc="width of the blade element", units="m")
+    rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
+    r = Float(5., iotype="in", desc="mean radius of the blade element", units="m")
+    dr = Float(1., iotype="in", desc="width of the blade element", units="m")
     theta = Float(1.616, iotype="in", desc="local pitch angle", units="rad")
-    chord = Float(.1, iotype="in", desc="local chord length", units="m", low=0)
+    chord = Float(.1872796, iotype="in", desc="local chord length", units="m", low=0)
     B = Int(3, iotype="in", desc="Number of blade elements")
 
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
-    V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
+    V_inf = Float(7, iotype="in", desc="free stream air velocity", units="m/s")
 
     #outputs
     V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
@@ -307,7 +306,8 @@ class BladeElement(Component):
         #polynomial interpolation from matlab code
         cl=6.2*i
         cd=0.008-0.003*cl+0.01*cl**2
-        return cd, cl
+        #return cd, cl
+        return 0., .6595
 
 
     def execute(self):    
@@ -318,9 +318,13 @@ class BladeElement(Component):
         result = fsolve(self.iteration_, [self.a_init, self.b_init])
         self.a = result[0]
         self.b = result[1]
+
+        print self.r, self.a, np.degrees(self.theta)
+
         self.V_0 = self.V_inf + self.a*self.V_inf
         self.V_2 = omega_r-self.b*omega_r
         self.V_1 = (self.V_0**2+self.V_2**2)**.5
+
 
         q_c = (self.rho*self.V_1**2)*self.chord*self.dr
         cos_phi = cos(self.phi)
@@ -342,8 +346,13 @@ if __name__ == "__main__":
     
     b = BEM()
     b.run()
+    print
     print b.perf.data.C_P
     print b.perf.data.eta
     
-
+    '''
+    b = BladeElement()
+    b.run()
+    print b.a, b.b
+    '''
 
