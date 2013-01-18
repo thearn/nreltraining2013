@@ -328,7 +328,7 @@ class BladeElement(Component):
         self.a = result[0]
         self.b = result[1]
 
-        print self.r, np.degrees(self.theta), np.degrees(self.phi)
+        #print self.r, np.degrees(self.theta), np.degrees(self.phi)
 
         self.V_0 = self.V_inf + self.a*self.V_inf
         self.V_2 = omega_r-self.b*omega_r
