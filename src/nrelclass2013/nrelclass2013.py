@@ -157,6 +157,7 @@ class SmallBEM(Assembly):
 
         self.add('BE0', BladeElement())
         self.driver.workflow.add('BE0')
+        self.BEO.B = 3
         self.connect('radius_dist.output[0]', 'BE0.r')
         self.connect('radius_dist.delta', 'BE0.dr')
         self.connect('twist_dist.output[0]', 'BE0.theta')
@@ -170,6 +171,7 @@ class SmallBEM(Assembly):
 
         self.add('BE1', BladeElement())
         self.driver.workflow.add('BE1')
+        self.BE1.B = 3
         self.connect('radius_dist.output[1]', 'BE1.r')
         self.connect('radius_dist.delta', 'BE1.dr')
         self.connect('twist_dist.output[1]', 'BE1.theta')
@@ -183,6 +185,7 @@ class SmallBEM(Assembly):
 
         self.add('BE2', BladeElement())
         self.driver.workflow.add('BE2')
+        self.BE2.B = 3
         self.connect('radius_dist.output[2]', 'BE2.r')
         self.connect('radius_dist.delta', 'BE2.dr')
         self.connect('twist_dist.output[2]', 'BE2.theta')
@@ -238,6 +241,7 @@ class BEM(SmallBEM):
             self._elements.append(name)
             self.add(name, BladeElement())
             self.driver.workflow.add(name)
+            exec("self."+name+".B = "+str(n_elements))
             self.connect('radius_dist.output[%d]'%i, name+'.r')
             self.connect('radius_dist.delta', name+'.dr')
             self.connect('twist_dist.output[%d]'%i, name+'.theta')
@@ -262,7 +266,7 @@ class BladeElement(Component):
     dr = Float(.072, iotype="in", desc="width of the blade element", units="m")
     theta = Float(1.616, iotype="in", desc="local pitch angle", units="rad")
     chord = Float(.1, iotype="in", desc="local chord length", units="m", low=0)
-    sigma = Float(0.01814, iotype="in", desc="local solidity")
+    B = Int(3, iotype="in", desc="Number of blade elements")
 
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
     V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
@@ -272,6 +276,7 @@ class BladeElement(Component):
     V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
     V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
     omega = Float(iotype="out", desc="average angular velocity for element", units="rad/s")
+    sigma = Float(iotype="out", desc="Local solidity")
     alpha = Float(iotype="out", desc="local angle of attack", units="rad")
     delta_T = Float(iotype="out", desc="thrust on the blade element", units="N")
     delta_Q = Float(iotype="out", desc="torque on the blade element", units="N*m")
@@ -306,6 +311,7 @@ class BladeElement(Component):
 
 
     def execute(self):    
+        self.sigma = self.B*self.chord / (2* np.pi * self.r)
         self.omega = self.rpm*2*pi/60.0
         omega_r = self.omega*self.r
         self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
@@ -333,15 +339,10 @@ class BladeElement(Component):
         return (X[0]-self.a), (X[1]-self.b)
 
 if __name__ == "__main__":
-    '''
-    blade = BladeElement()
-    blade.execute()
-    print blade.a, blade.b
-    print blade.delta_Q, blade.delta_T
-    '''
     
     b = BEM()
     b.run()
+    print b.perf.data.C_P
     print b.perf.data.eta
     
 
