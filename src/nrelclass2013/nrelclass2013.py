@@ -82,7 +82,10 @@ class BEMPerf(Component):
                                default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
         self.add('delta_Q', Array(iotype='in', desc='torques from %d different blade elements'%n,
                                default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N*m"))
-
+        self.add('cp_int', Array(iotype='in', desc='c_p integrant points from %d different blade elements'%n,
+                               default_value=np.ones((n,)), shape=(n,), dtype=Float))
+        self.add('lambda_r', Array(iotype='in', desc='lambda_r from %d different blade elements'%n,
+                               default_value=np.ones((n,)), shape=(n,), dtype=Float))        
     def execute(self):
         self.data = BEMPerfData()  #emtpy the variable tree
 
@@ -95,7 +98,10 @@ class BEMPerf(Component):
 
         self.data.C_T = self.data.net_thrust/norm
         self.data.C_Q = self.data.net_torque/(norm*_diam)
-        self.data.C_P = self.data.C_Q*2*pi
+        
+        #self.data.C_P = self.data.C_Q*2*pi
+        self.data.C_P = np.trapz(self.cp_int, x = self.lambda_r) * 8. / self.lambda_r.max()**2
+
         self.data.J = self.V_inf/(_n*_diam)
         self.data.eta = self.data.C_T/self.data.C_Q*self.data.J/(2*pi)
 
@@ -252,6 +258,9 @@ class BEM(SmallBEM):
             self.connect(name+'.delta_T', 'perf.delta_T[%d]'%i)
             self.connect(name+'.delta_Q', 'perf.delta_Q[%d]'%i)
 
+            self.connect(name+'.cp_int', 'perf.cp_int[%d]'%i)
+            self.connect(name+'.lambda_r', 'perf.lambda_r[%d]'%i)
+
         self.driver.workflow.add('perf')
 
 class BladeElement(Component):
@@ -283,6 +292,7 @@ class BladeElement(Component):
     b = Float(iotype="out", desc="converged value for radial inflow factor")
     lambda_r = Float(8, iotype="out", desc="local tip speed ratio")
     phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
+    cp_int = Float(iotype="out", desc="integrand eval point for c_p calculation")
 
     def Coeff_lookup(self, i):
         #piecewise linear interpolation for paper 
@@ -320,15 +330,11 @@ class BladeElement(Component):
         #self.a_init = 1./(1 + 4.*(np.cos(1.487)**2)/(self.sigma*0.7*np.sin(1.487)))
         #self.b_init = (1-3*self.a)/(4*self.a - 1)
 
-        self.phi = np.radians(90. - (2/3.)*np.degrees(
-            np.arctan(1./self.lambda_r)))
-
-        
         result = fsolve(self.iteration_, [self.a_init, self.b_init])
         self.a = result[0]
         self.b = result[1]
 
-        print self.r, np.degrees(self.theta), np.degrees(self.phi)
+        #print self.r, np.degrees(self.theta), np.degrees(self.phi)
 
         self.V_0 = self.V_inf + self.a*self.V_inf
         self.V_2 = omega_r-self.b*omega_r
@@ -340,7 +346,9 @@ class BladeElement(Component):
         sin_phi = sin(self.phi)
         C_D, C_L = self.Coeff_lookup(self.alpha)
         self.delta_T = q_c*(C_L*cos_phi-C_D*sin_phi)
-        self.delta_Q = q_c*self.r*(C_L*sin_phi+C_D*cos_phi)       
+        self.delta_Q = q_c*self.r*(C_L*sin_phi+C_D*cos_phi)   
+
+        self.cp_int = self.b*(1-self.a)*self.lambda_r**3    
 
     def iteration_(self,X):
         self.phi =  np.arctan(self.lambda_r* (1+X[1]) / (1-X[0]) )
@@ -352,12 +360,13 @@ class BladeElement(Component):
         return (X[0]-self.a), (X[1]-self.b)
 
 if __name__ == "__main__":
-    '''
+    
     b = BEM()
     b.run()
     print
     print b.perf.data.C_P
     print b.perf.data.eta
+    
     
     '''
     b = BladeElement()
@@ -365,6 +374,6 @@ if __name__ == "__main__":
     b.gamma = np.radians(61.)
     b.chord = 0.7
     b.run()
-    print b.a, b.b
-    
+    print b.cp_int
+    '''    
 
