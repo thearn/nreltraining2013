@@ -258,7 +258,7 @@ class BladeElement(Component):
     """Calculations for a single radial slice of a rotor blade"""
 
     #inputs
-    a_init = Float(0.3543, iotype="in", desc="initial guess for axial inflow factor")
+    a_init = Float(0.2, iotype="in", desc="initial guess for axial inflow factor")
     b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
     rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
     r = Float(5., iotype="in", desc="mean radius of the blade element", units="m")
@@ -285,11 +285,10 @@ class BladeElement(Component):
     phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
 
     def Coeff_lookup(self, i):
-        ''' #piecewise linear interpolation for paper 
-        angles_array_CL = np.array([0,5,7.9289,8.0510,10,14,\
-            15,20,25,30,35,40])
-        C_L_array = np.array([0,0.6,1.,0.6763,1.025,1.3,0.8,\
-            0.7,0.8,.95,1.1,1.15])      
+        #piecewise linear interpolation for paper 
+        i = self.r
+        angles_array_CL = np.array([5., 4., 3., 2., 1., .2][::-1])
+        C_L_array = np.array([.6595, .6597, .6589, .6609, .6866, .7][::-1])  
 
         angles_array_CD = np.array([0,10,20,30,40])
         C_D_array = np.array([0.,0.,0.3,0.6,1.])       
@@ -301,25 +300,35 @@ class BladeElement(Component):
         idx= angles_array_CD.searchsorted(i)-1
         slope =  (C_D_array[idx+1]-C_D_array[idx])/(angles_array_CD[idx+1]-angles_array_CD[idx])
         C_D = slope*(i-angles_array_CD[idx]) + C_D_array[idx]
-        return C_D, C_L
-        '''
-        #polynomial interpolation from matlab code
+        return 0*C_D, C_L
+        
+        '''#polynomial interpolation from matlab code
         cl=6.2*i
         cd=0.008-0.003*cl+0.01*cl**2
         #return cd, cl
-        return 0., .6595
-
+        '''
+        '''
+        return 0., .7
+        '''
 
     def execute(self):    
         self.sigma = self.B*self.chord / (2* np.pi * self.r)
         self.omega = self.rpm*2*pi/60.0
         omega_r = self.omega*self.r
         self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
+
+        #self.a_init = 1./(1 + 4.*(np.cos(1.487)**2)/(self.sigma*0.7*np.sin(1.487)))
+        #self.b_init = (1-3*self.a)/(4*self.a - 1)
+
+        self.phi = np.radians(90. - (2/3.)*np.degrees(
+            np.arctan(1./self.lambda_r)))
+
+        
         result = fsolve(self.iteration_, [self.a_init, self.b_init])
         self.a = result[0]
         self.b = result[1]
 
-        print self.r, self.a, np.degrees(self.theta)
+        print self.r, np.degrees(self.theta), np.degrees(self.phi)
 
         self.V_0 = self.V_inf + self.a*self.V_inf
         self.V_2 = omega_r-self.b*omega_r
@@ -343,7 +352,7 @@ class BladeElement(Component):
         return (X[0]-self.a), (X[1]-self.b)
 
 if __name__ == "__main__":
-    
+    '''
     b = BEM()
     b.run()
     print
@@ -352,7 +361,10 @@ if __name__ == "__main__":
     
     '''
     b = BladeElement()
+    b.r= 0.2
+    b.gamma = np.radians(61.)
+    b.chord = 0.7
     b.run()
     print b.a, b.b
-    '''
+    
 
