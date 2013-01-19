@@ -8,6 +8,10 @@ Contents:
    :maxdepth: 2
     
    usage
+   building_component
+   basic_optimization
+   recording_data
+   bem
    srcdocs
    pkgdocs
 
