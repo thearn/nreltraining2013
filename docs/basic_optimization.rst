@@ -1,3 +1,5 @@
+.. _`uncon-opt`:
+
 Unconstrained Optimization for Betz Limit
 =============================================================
 
@@ -74,5 +76,25 @@ show up in the dataflow when you do this. This indicates that the optimizer is n
 
 
 
+The Workflow
+---------------------------
 
+You might have noticed that when you added the first parameter to the optimizer, that the workflow changed. OpenMDAO figured out that since 
+the optimizer was varying a value in the ``ad`` component, that it would need to be in the workflow for that driver. So it added ``ad`` to the 
+workflow for you. It's important to remember that OpenMDAO distinguished between the dataflow and the workflow. The dataflow describes which 
+components communicate with others, but it says nothing about when that communication happens. The order of execution is determined by the 
+workflow. Although the dataflow does not define the workflow, it can constraint it. For example, if you have two components `a` and `b`, 
+where `a` has an output connected to the input of `b`, then you must run `a` before `b`.
+
+ In a lot of cases the workflow that is automatically created for you will work just fine. But if you need to modify it to add a sub-solver 
+ loop or introduce some metamodel training then the flexibility is there. 
+
+
+Run the Optimization
+---------------------------
+
+So you're ready to run. Just right click on the assembly, ``top``, and pick ``run`` from the menu. This will cause the whole assembly to execute
+and will run your optimization for you. double click on the component, when it's finished, you will see that the optimizer found a value of 
+approximately 1/3 for axial induction factor, yeilding a power coefficient just under .6. Congradulations, you have just found betz's limit! 
+You can close down the project for now. 
 
