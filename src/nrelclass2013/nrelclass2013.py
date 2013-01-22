@@ -1,9 +1,10 @@
 __all__ = ['ActuatorDisk', 'SmallBEM', 'BEM', 'BladeElement', 'BEMPerf', 'BEMPerfData']
 
-from math import pi, atan2, cos, sin
+from math import pi, cos, sin, tan
 
 import numpy as np
 from scipy.optimize import fsolve
+from scipy.interpolate import interp1d
 
 from openmdao.main.api import Component, Assembly, VariableTree
 from openmdao.lib.datatypes.api import Float, Int, Array, Slot
@@ -45,16 +46,20 @@ class ActuatorDisk(Component):
         self.power = self.Cp*q*self.Area
 
 
+class FlowConditions(VariableTree):     
+    rho = Float(1.225, desc="air density", units="kg/m**3")
+    V = Float(7., desc="free stream air velocity", units="m/s")
+
+
 class BEMPerfData(VariableTree):
     """Container that holds all rotor performance data"""
 
     net_thrust = Float(desc="net axial thrust", units="N")
-    C_T = Float(desc="thrust coefficient")
-    net_torque = Float(desc="net torque", units="N*m")
-    C_Q = Float(desc="torque coefficient")
-    C_P = Float(desc="power coefficient")
+    net_power = Float(desc="net power produced", units="W")
+    Ct = Float(desc="thrust coefficient")
+    Cp = Float(desc="power coefficient")
     J = Float(desc="advance ratio")
-    eta = Float(desc="turbine efficiency")
+    #eta = Float(desc="turbine efficiency")
 
 
 class BEMPerf(Component):
@@ -62,48 +67,41 @@ class BEMPerf(Component):
 
     r = Float(.8, iotype="in", desc="tip radius of the rotor", units="m")
     rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
-    rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
-    V_inf = Float(60, iotype="in", desc="free stream air velocity", units="m/s")
 
-    #net_thrust = Float(iotype="out",desc="net axial thrust", units="N")
-    #C_T = Float(iotype="out",desc="thrust coefficient")
-    #net_torque = Float(iotype="out",desc="net torque", units="N*m")
-    #C_P = Float(iotype="out",desc="power coefficient")
-    #J = Float(iotype="out",desc="advance ratio")
-    #eta = Float(iotype="out",desc="turbine efficiency")
+    free_stream = Slot(FlowConditions, iotype="in") 
 
     data = Slot(BEMPerfData, iotype="out")
 
     #this lets the size of the arrays vary for different numbers of elements
     def __init__(self, n=10):
         super(BEMPerf, self).__init__()
-        self.add('data', BEMPerfData())  #needed initialization for VTs
+
+        #needed initialization for VTs
+        self.add('data', BEMPerfData())  
+        self.add('free_stream', FlowConditions())
+
+        #array size based on number of elements
         self.add('delta_T', Array(iotype='in', desc='thrusts from %d different blade elements'%n,
                                default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
-        self.add('delta_Q', Array(iotype='in', desc='torques from %d different blade elements'%n,
-                               default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N*m"))
-        self.add('cp_int', Array(iotype='in', desc='c_p integrant points from %d different blade elements'%n,
+        self.add('delta_Cp', Array(iotype='in', desc='Cp integrant points from %d different blade elements'%n,
                                default_value=np.ones((n,)), shape=(n,), dtype=Float))
         self.add('lambda_r', Array(iotype='in', desc='lambda_r from %d different blade elements'%n,
-                               default_value=np.ones((n,)), shape=(n,), dtype=Float))        
+                               default_value=np.ones((n,)), shape=(n,), dtype=Float))      
+                                 
     def execute(self):
         self.data = BEMPerfData()  #emtpy the variable tree
 
-        self.data.net_thrust = np.sum(self.delta_T)
-        self.data.net_torque = np.sum(self.delta_Q)
+        V_inf = self.free_stream.V
+        rho = self.free_stream.rho
 
-        _diam = 2*self.r
-        _n = self.rpm/60  #rotations per second
-        norm = self.rho*(_n**2)*(_diam**4)
+        norm = (.5*rho*(V_inf**2)*(pi*self.r**2))
+        self.data.net_thrust = np.trapz(self.delta_T, x=self.lambda_r)
+        self.data.Ct = self.data.net_thrust/norm
 
-        self.data.C_T = self.data.net_thrust/norm
-        self.data.C_Q = self.data.net_torque/(norm*_diam)
-        
-        #self.data.C_P = self.data.C_Q*2*pi
-        self.data.C_P = np.trapz(self.cp_int, x = self.lambda_r) * 8. / self.lambda_r.max()**2
+        self.data.Cp = np.trapz(self.delta_Cp, x=self.lambda_r) * 8. / self.lambda_r.max()**2
+        self.data.net_power = self.data.Cp*norm*V_inf
 
-        self.data.J = self.V_inf/(_n*_diam)
-        self.data.eta = self.data.C_T/self.data.C_Q*self.data.J/(2*pi)
+        self.data.J = V_inf/(self.rpm/60.0*2*self.r)
 
 
 class SmallBEM(Assembly):
@@ -111,28 +109,22 @@ class SmallBEM(Assembly):
 
     #physical properties inputs
     r_hub = Float(0.2, iotype="in", desc="blade hub radius", units="m", low=0)
-    twist_hub = Float(61.0, iotype="in", desc="twist angle at the hub radius", units="deg")
+    twist_hub = Float(61, iotype="in", desc="twist angle at the hub radius", units="deg")
     chord_hub = Float(.7, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     r_tip = Float(5, iotype="in", desc="blade tip radius", units="m")
-    twist_tip = Float(92.58, iotype="in", desc="twist angle at the tip radius", units="deg")
+    twist_tip = Float(93.58, iotype="in", desc="twist angle at the tip radius", units="deg")
     chord_tip = Float(.187, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     pitch = Float(0, iotype="in", desc="overall blade pitch", units="deg")
     rpm = Float(107, iotype="in", desc="rotations per minute", low=0, units="min**-1")
-    n_B = Int(3, iotype="in", desc="number of blades", low=1)
+    B = Int(3, iotype="in", desc="number of blades", low=1)
 
     #wind condition inputs
-    rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
-    V_inf = Float(7., iotype="in", desc="free stream air velocity", units="m/s")
-
-    #outputs
-    #thrust = Float(iotype="out",desc="net axial thrust", units="N")
-    #torque = Float(iotype="out",desc="net torque", units="N*m")
-    #J = Float(iotype="out",desc="advance ratio")
-    #eta = Float(iotype="out",desc="turbine efficiency")
-
-    #data = Slot(RotorPerfData, iotype="out") #only needed if you do connectio manually
+    free_stream = Slot(FlowConditions, iotype="in") 
 
     def configure(self):
+
+        self.add('free_stream', FlowConditions()) #initialize
+
         self.add('radius_dist', LinearDistribution(n=3, units="m"))
         self.connect('r_hub', 'radius_dist.start')
         self.connect('r_tip', 'radius_dist.end')
@@ -150,58 +142,49 @@ class SmallBEM(Assembly):
         self.driver.workflow.add('twist_dist')
 
         self.add('perf', BEMPerf(n=3))
-        #self.connect('perf.net_thrust','thrust')
-        #self.connect('perf.net_torque','torque')
-        #self.connect('perf.J','J')
-        #self.connect('perf.eta','eta')
-        #self.connect('perf.data','data')
         self.create_passthrough('perf.data')
         self.connect('r_tip', 'perf.r')
-        self.connect('rho', 'perf.rho')
         self.connect('rpm', 'perf.rpm')
-        self.connect('V_inf', 'perf.V_inf')
+        self.connect('free_stream', 'perf.free_stream')
 
         self.add('BE0', BladeElement())
         self.driver.workflow.add('BE0')
-        self.BE0.B = 3
         self.connect('radius_dist.output[0]', 'BE0.r')
         self.connect('radius_dist.delta', 'BE0.dr')
         self.connect('twist_dist.output[0]', 'BE0.theta')
         self.connect('chord_dist.output[0]', 'BE0.chord')
+        self.connect('B', 'BE0.B')
         self.connect('rpm', 'BE0.rpm')
 
-        self.connect('rho', 'BE0.rho')
-        self.connect('V_inf', 'BE0.V_inf')
+        self.connect('free_stream.rho', 'BE0.rho')
+        self.connect('free_stream.V', 'BE0.V_inf')
         self.connect('BE0.delta_T', 'perf.delta_T[0]')
-        self.connect('BE0.delta_Q', 'perf.delta_Q[0]')
 
         self.add('BE1', BladeElement())
         self.driver.workflow.add('BE1')
-        self.BE1.B = 3
         self.connect('radius_dist.output[1]', 'BE1.r')
         self.connect('radius_dist.delta', 'BE1.dr')
         self.connect('twist_dist.output[1]', 'BE1.theta')
         self.connect('chord_dist.output[1]', 'BE1.chord')
+        self.connect('B', 'BE1.B')
         self.connect('rpm', 'BE1.rpm')
 
-        self.connect('rho', 'BE1.rho')
-        self.connect('V_inf', 'BE1.V_inf')
+        self.connect('free_stream.rho', 'BE1.rho')
+        self.connect('free_stream.V', 'BE1.V_inf')
         self.connect('BE1.delta_T', 'perf.delta_T[1]')
-        self.connect('BE1.delta_Q', 'perf.delta_Q[1]')
 
         self.add('BE2', BladeElement())
         self.driver.workflow.add('BE2')
-        self.BE2.B = 3
         self.connect('radius_dist.output[2]', 'BE2.r')
         self.connect('radius_dist.delta', 'BE2.dr')
         self.connect('twist_dist.output[2]', 'BE2.theta')
         self.connect('chord_dist.output[2]', 'BE2.chord')
+        self.connect('B', 'BE1.B')
         self.connect('rpm', 'BE2.rpm')
 
-        self.connect('rho', 'BE2.rho')
-        self.connect('V_inf', 'BE2.V_inf')
+        self.connect('free_stream.rho', 'BE2.rho')
+        self.connect('free_stream.V', 'BE2.V_inf')
         self.connect('BE2.delta_T', 'perf.delta_T[2]')
-        self.connect('BE2.delta_Q', 'perf.delta_Q[2]')
 
         #perf runs last
         self.driver.workflow.add('perf')
@@ -215,6 +198,8 @@ class BEM(SmallBEM):
         super(BEM, self).__init__()
 
     def configure(self):
+
+        self.add('free_stream', FlowConditions()) #initialize
 
         n_elements = self._n_elements
 
@@ -237,9 +222,8 @@ class BEM(SmallBEM):
         self.add('perf', BEMPerf(n=n_elements))
         self.create_passthrough('perf.data')
         self.connect('r_tip', 'perf.r')
-        self.connect('rho', 'perf.rho')
         self.connect('rpm', 'perf.rpm')
-        self.connect('V_inf', 'perf.V_inf')
+        self.connect('free_stream', 'perf.free_stream')
 
         self._elements = []
         for i in range(n_elements):
@@ -251,17 +235,18 @@ class BEM(SmallBEM):
             self.connect('radius_dist.delta', name+'.dr')
             self.connect('twist_dist.output[%d]'%i, name+'.theta')
             self.connect('chord_dist.output[%d]'%i, name+".chord")
+            self.connect('B', name+'.B')
             self.connect('rpm', name+'.rpm')
 
-            self.connect('rho', name+'.rho')
-            self.connect('V_inf', name+'.V_inf')
+            self.connect('free_stream.rho', name+'.rho')
+            self.connect('free_stream.V', name+'.V_inf')
             self.connect(name+'.delta_T', 'perf.delta_T[%d]'%i)
-            self.connect(name+'.delta_Q', 'perf.delta_Q[%d]'%i)
 
-            self.connect(name+'.cp_int', 'perf.cp_int[%d]'%i)
+            self.connect(name+'.delta_Cp', 'perf.delta_Cp[%d]'%i)
             self.connect(name+'.lambda_r', 'perf.lambda_r[%d]'%i)
 
         self.driver.workflow.add('perf')
+
 
 class BladeElement(Component):
     """Calculations for a single radial slice of a rotor blade"""
@@ -287,71 +272,50 @@ class BladeElement(Component):
     sigma = Float(iotype="out", desc="Local solidity")
     alpha = Float(iotype="out", desc="local angle of attack", units="rad")
     delta_T = Float(iotype="out", desc="thrust on the blade element", units="N")
-    delta_Q = Float(iotype="out", desc="torque on the blade element", units="N*m")
+    delta_Cp = Float(iotype="out", desc="integrand eval point for Cp calculation")
     a = Float(iotype="out", desc="converged value for axial inflow factor")
     b = Float(iotype="out", desc="converged value for radial inflow factor")
     lambda_r = Float(8, iotype="out", desc="local tip speed ratio")
     phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
-    cp_int = Float(iotype="out", desc="integrand eval point for c_p calculation")
 
-    def Coeff_lookup(self, i):
-        #piecewise linear interpolation for paper 
-        i = self.r
-        angles_array_CL = np.array([5., 4., 3., 2., 1., .2][::-1])
-        C_L_array = np.array([.6595, .6597, .6589, .6609, .6866, .7][::-1])  
+    def __init__(self): 
+        super(BladeElement, self).__init__()
 
-        angles_array_CD = np.array([0,10,20,30,40])
-        C_D_array = np.array([0.,0.,0.3,0.6,1.])       
+        #rough linear interpolation from naca 0012 airfoil data
+        rad = np.array([0., 13., 15, 20, 30])*pi/180
+        self.cl_interp = interp1d(rad, [0, 1.3, .8, .7, 1.1], fill_value=0.001, bounds_error=False)
 
-        idx= angles_array_CL.searchsorted(i)-1
-        slope =  (C_L_array[idx+1]-C_L_array[idx])/(angles_array_CL[idx+1]-angles_array_CL[idx])
-        C_L = slope*(i-angles_array_CL[idx]) + C_L_array[idx]
+        rad = np.array([0., 10, 20, 30, 40])*pi/180
+        self.cd_interp = interp1d(rad, [0., 0., 0.3, 0.6, 1.], fill_value=0.001, bounds_error=False)
 
-        idx= angles_array_CD.searchsorted(i)-1
-        slope =  (C_D_array[idx+1]-C_D_array[idx])/(angles_array_CD[idx+1]-angles_array_CD[idx])
-        C_D = slope*(i-angles_array_CD[idx]) + C_D_array[idx]
-        return 0*C_D, C_L
+    def _coeff_lookup(self, i):
+        C_L = self.cl_interp(i)
+        C_D = self.cd_interp(i)    
+        return C_D, C_L
         
-        '''#polynomial interpolation from matlab code
-        cl=6.2*i
-        cd=0.008-0.003*cl+0.01*cl**2
-        #return cd, cl
-        '''
-        '''
-        return 0., .7
-        '''
-
     def execute(self):    
         self.sigma = self.B*self.chord / (2* np.pi * self.r)
         self.omega = self.rpm*2*pi/60.0
         omega_r = self.omega*self.r
         self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
 
-        #self.a_init = 1./(1 + 4.*(np.cos(1.487)**2)/(self.sigma*0.7*np.sin(1.487)))
-        #self.b_init = (1-3*self.a)/(4*self.a - 1)
-
-        result = fsolve(self.iteration_, [self.a_init, self.b_init])
+        result = fsolve(self._iteration, [self.a_init, self.b_init])
         self.a = result[0]
         self.b = result[1]
-
-        #print self.r, np.degrees(self.theta), np.degrees(self.phi)
 
         self.V_0 = self.V_inf + self.a*self.V_inf
         self.V_2 = omega_r-self.b*omega_r
         self.V_1 = (self.V_0**2+self.V_2**2)**.5
 
-
-        q_c = (self.rho*self.V_1**2)*self.chord*self.dr
+        q_c = self.B*.5*(self.rho*self.V_1**2)*self.chord*self.dr
         cos_phi = cos(self.phi)
         sin_phi = sin(self.phi)
-        C_D, C_L = self.Coeff_lookup(self.alpha)
+        C_D, C_L = self._coeff_lookup(self.alpha)
         self.delta_T = q_c*(C_L*cos_phi-C_D*sin_phi)
-        self.delta_Q = q_c*self.r*(C_L*sin_phi+C_D*cos_phi)   
+        self.delta_Cp = self.b*(1-self.a)*self.lambda_r**3*(1-C_D/C_L*tan(self.phi))
 
-        self.cp_int = self.b*(1-self.a)*self.lambda_r**3    
-
-    def iteration_(self,X):
-        self.phi =  np.arctan(self.lambda_r* (1+X[1]) / (1-X[0]) )
+    def _iteration(self, X):
+        self.phi = np.arctan(self.lambda_r*(1+X[1])/(1-X[0]))
         self.alpha = self.theta - self.phi
         C_D, C_L = self.Coeff_lookup(self.alpha)
         self.a = 1./(1 + 4.*(np.cos(self.phi)**2)/(self.sigma*C_L*np.sin(self.phi)))
@@ -363,17 +327,4 @@ if __name__ == "__main__":
     
     b = BEM()
     b.run()
-    print
-    print b.perf.data.C_P
-    print b.perf.data.eta
-    
-    
-    '''
-    b = BladeElement()
-    b.r= 0.2
-    b.gamma = np.radians(61.)
-    b.chord = 0.7
-    b.run()
-    print b.cp_int
-    '''    
-
+    print b.data.Cp

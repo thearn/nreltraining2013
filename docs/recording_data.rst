@@ -40,6 +40,7 @@ The first thing you'll notice is a bunch of text streaming through the console w
 something like this: 
 
 :: 
+
     Case: 1
        uuid: 424ee13d-627c-11e2-bdac-a82066196c38
        inputs:
