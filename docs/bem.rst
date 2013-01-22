@@ -240,7 +240,8 @@ Now you want to connect up the BladeElement instances and the BEMPerfComponent. 
 small green circle on the right of *BE0* to small circle on the top of *perf*. This will bring up the connection
 dialog.  
 
-[[screenshot here]]
+.. figure:: connection.png
+    :align:center
 
 We want to connect three variables from *BE0* to *perf*: 
 * *BE0.delta_Ct* to *perf.delta_Ct[0]*
@@ -252,7 +253,8 @@ respectively, and select the variable from the suggestions when you see it pop u
 connect. When each connection is made, it will get drawn in the dialog so you can see it. 
 When you're done, it will look like this: 
 
-[[screenshot here]]
+.. figure:: connection_dialog.png
+    :align:center
 
 Go ahead and create similar connections for the other two BladeSegment, remembering to increment 
 the array index to *1* and then *2* for each one. 
@@ -310,15 +312,59 @@ So lets take a look at what the interface for BEM analysis would look like:
         #wind condition inputs
         free_stream = Slot(FlowConditions, iotype="in") 
 
+        def configure(self):
+            self.add('BE0', BladeElement())
+            self.add('BE1', BladeElement())
+            self.add('BE2', BladeElement())
+            self.add('perf', BEMPerf())
+
+            self.connect('BE0.delta_Ct', 'perf.delta_Ct[0]')
+            self.connect('BE0.delta_Cp', 'perf.delta_Cp[0]')
+            self.connect('BE0.lambda_r', 'perf.lambda_r[0]')   
+
+            self.connect('BE1.delta_Ct', 'perf.delta_Ct[1]')
+            self.connect('BE1.delta_Cp', 'perf.delta_Cp[1]')
+            self.connect('BE1.lambda_r', 'perf.lambda_r[1]')   
+
+            self.connect('BE2.delta_Ct', 'perf.delta_Ct[2]')
+            self.connect('BE2.delta_Cp', 'perf.delta_Cp[2]')
+            self.connect('BE2.lambda_r', 'perf.lambda_r[2]')   
+
+            self.driver.workflow.add(['BE0', 'BE1', 'BE2', 'perf'])
+
+
+
 This code looks really similar to the previous component code we defined, except that our class 
 inherits from ``Assembly`` instead of ``Component``. We've defined 9 scalar input design variables and one 
 VariableTree that holds an additional 2 scalar inputs that deal with the wind conditions the turbine would 
-operate in. So lets replace the ``top`` assembly with our new ``BEM`` assembly. Filter the Library with ``nrel`` again 
-and drag ``BEM`` over to drop it on ``top``. 
+operate in. We also pre-defined the three BladeElement components, the BEMPerf component, connected them 
+all up, and added them to the workflow. 
+
+Create another new project in the OpenMDAO GUI. This time, the first thing you 
+should do is remove the default ``top`` Assembly that is defined automatically. We're going to use the ``BEM`` 
+assembly instead. Right click on ``top`` and select ``remove``. Then filter the Library with ``nrel`` again 
+and create an instance of the ``BEM`` assembly to work with. You can name the new assembly ``top`` again, or any
+other name you want. Your workspace will look like this 
+when your done: 
 
 [[screenshot here]] 
 
-Now you can 
+You have an assembly, with i/o and components connected and hooked up to a workflow. But you still need to 
+connect the assembly i/o to the components it holds. There are two ways you can do that. The first way, assuming
+you have existing variables defined like the inputs we created, is to again use the connection editor. Right
+click somewhere in the assembly and select ``Edit data connections`` from the menu. This will bring up the 
+connection window. This time, leave the source as *-- Assembly --*, but set the target to *BE0*. Now 
+you can connect the ``rho`` and ``V`` variables from the ``free_stream`` VariableTree and the ``B`` variable 
+to the coresponding variables in the BladeElement. Repeat that for ``BE1``, ``BE2``, and ``perf``. 
+
+We're almost done, but we still need to deal with chord, radius, and twist. Chord and Radius are pretty strait
+forward, but if you look at twist carefully you will see a small problem. For the BladeElement, twist is given 
+in radians. But in the BEM assembly, it's defined in degrees. OpenMDAO can handle this situation just fine. 
+When you try to connect two variables of different but compatible units, OpenMDAO will convert them for you 
+on the fly. If you try to connect two varaibles with incompatible units, you'll get an error. Consider that 
+strong incentive to always defined units on variables where appropriate. Give it a shot. Try to connect the 
+*radius_hub* variable from the assembly to *BE0.theta*. You'll get an error. 
+Then try to connect *twist_hub* to *BE0.theta*. That will work just fine. 
 
         
 

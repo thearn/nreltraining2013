@@ -121,6 +121,25 @@ class BEM(Assembly):
     #wind condition inputs
     free_stream = Slot(FlowConditions, iotype="in") 
 
+    def configure(self):
+        self.add('BE0', BladeElement())
+        self.add('BE1', BladeElement())
+        self.add('BE2', BladeElement())
+        self.add('perf', BEMPerf())
+
+        self.connect('BE0.delta_Ct', 'perf.delta_Ct[0]')
+        self.connect('BE0.delta_Cp', 'perf.delta_Cp[0]')
+        self.connect('BE0.lambda_r', 'perf.lambda_r[0]')   
+
+        self.connect('BE1.delta_Ct', 'perf.delta_Ct[1]')
+        self.connect('BE1.delta_Cp', 'perf.delta_Cp[1]')
+        self.connect('BE1.lambda_r', 'perf.lambda_r[1]')   
+
+        self.connect('BE2.delta_Ct', 'perf.delta_Ct[2]')
+        self.connect('BE2.delta_Cp', 'perf.delta_Cp[2]')
+        self.connect('BE2.lambda_r', 'perf.lambda_r[2]')
+
+        self.driver.workflow.add(['BE0', 'BE1', 'BE2', 'perf'])
 
 class AutoBEM(BEM):
     """Blade Rotor with user specified number BladeElements"""
