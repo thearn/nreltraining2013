@@ -59,6 +59,7 @@ class BEMPerfData(VariableTree):
     Ct = Float(desc="thrust coefficient")
     Cp = Float(desc="power coefficient")
     J = Float(desc="advance ratio")
+    tip_speed_ratio = Float(desc="tip speed ratio")
     #eta = Float(desc="turbine efficiency")
 
 
@@ -103,16 +104,19 @@ class BEMPerf(Component):
 
         self.data.J = V_inf/(self.rpm/60.0*2*self.r)
 
+        omega = self.rpm*2*pi/60
+        self.data.tip_speed_ratio = omega*self.r/self.free_stream.V
+
 
 class BEM(Assembly):
     """Blade Rotor with 3 BladeElements"""
 
     #physical properties inputs
     r_hub = Float(0.2, iotype="in", desc="blade hub radius", units="m", low=0)
-    twist_hub = Float(61, iotype="in", desc="twist angle at the hub radius", units="deg")
+    twist_hub = Float(29, iotype="in", desc="twist angle at the hub radius", units="deg")
     chord_hub = Float(.7, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     r_tip = Float(5, iotype="in", desc="blade tip radius", units="m")
-    twist_tip = Float(93.58, iotype="in", desc="twist angle at the tip radius", units="deg")
+    twist_tip = Float(-3.58, iotype="in", desc="twist angle at the tip radius", units="deg")
     chord_tip = Float(.187, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
     pitch = Float(0, iotype="in", desc="overall blade pitch", units="deg")
     rpm = Float(107, iotype="in", desc="rotations per minute", low=0, units="min**-1")
@@ -120,6 +124,10 @@ class BEM(Assembly):
 
     #wind condition inputs
     free_stream = Slot(FlowConditions, iotype="in") 
+
+    def __init__(self): 
+        super(BEM, self).__init__()
+        self.add('free_stream', FlowConditions())
 
     def configure(self):
         self.add('BE0', BladeElement())
@@ -139,7 +147,13 @@ class BEM(Assembly):
         self.connect('BE2.delta_Cp', 'perf.delta_Cp[2]')
         self.connect('BE2.lambda_r', 'perf.lambda_r[2]')
 
-        self.driver.workflow.add(['BE0', 'BE1', 'BE2', 'perf'])
+        #self.connect('free_stream.rho', 'BE0.rho')
+        #self.connect('free_stream.rho', 'BE1.rho')
+        #self.connect('free_stream.rho', 'BE2.rho')
+        #self.connect('free_stream', 'perf.free_stream')
+
+        #self.driver.workflow.add(['BE0', 'BE1', 'BE2', 'perf'])
+
 
 class AutoBEM(BEM):
     """Blade Rotor with user specified number BladeElements"""
@@ -184,8 +198,9 @@ class AutoBEM(BEM):
             self.driver.workflow.add(name)
             self.connect('radius_dist.output[%d]'%i, name+'.r')
             self.connect('radius_dist.delta', name+'.dr')
-            self.connect('twist_dist.output[%d]'%i, name+'.theta')
+            self.connect('twist_dist.output[%d]'%i, name+'.twist')
             self.connect('chord_dist.output[%d]'%i, name+".chord")
+
             self.connect('B', name+'.B')
             self.connect('rpm', name+'.rpm')
 
@@ -208,7 +223,7 @@ class BladeElement(Component):
     rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
     r = Float(5., iotype="in", desc="mean radius of the blade element", units="m")
     dr = Float(1., iotype="in", desc="width of the blade element", units="m")
-    theta = Float(1.616, iotype="in", desc="local pitch angle", units="rad")
+    twist = Float(1.616, iotype="in", desc="local twist angle", units="rad")
     chord = Float(.1872796, iotype="in", desc="local chord length", units="m", low=0)
     B = Int(3, iotype="in", desc="Number of blade elements")
 
@@ -254,7 +269,7 @@ class BladeElement(Component):
         self.a = result[0]
         self.b = result[1]
 
-        self.V_0 = self.V_inf + self.a*self.V_inf
+        self.V_0 = self.V_inf - self.a*self.V_inf
         self.V_2 = omega_r-self.b*omega_r
         self.V_1 = (self.V_0**2+self.V_2**2)**.5
 
@@ -267,7 +282,7 @@ class BladeElement(Component):
 
     def _iteration(self, X):
         self.phi = np.arctan(self.lambda_r*(1+X[1])/(1-X[0]))
-        self.alpha = self.theta - self.phi
+        self.alpha = pi/2-self.twist-self.phi
         C_D, C_L = self._coeff_lookup(self.alpha)
         self.a = 1./(1 + 4.*(np.cos(self.phi)**2)/(self.sigma*C_L*np.sin(self.phi)))
         self.b = (self.sigma*C_L) / (4* self.lambda_r * np.cos(self.phi)) * (1 - self.a)
@@ -276,6 +291,51 @@ class BladeElement(Component):
 
 if __name__ == "__main__":
     
-    b = AutoBEM()
-    b.run()
-    print b.data.Cp
+    top = Assembly()
+    top.add('b', AutoBEM())
+    top.driver.workflow.add('b')
+
+    #top.run()
+
+    print top.b.rpm
+    print top.b.data.Cp
+    print 'top.b.chord_hub: ', top.b.chord_hub
+    print 'top.b.chord_tip: ', top.b.chord_tip
+    print 'lambda: ', top.b.perf.data.tip_speed_ratio
+    print top.b.BE0.r, top.b.BE0.sigma, top.b.BE0.chord
+    print top.b.BE1.r, top.b.BE1.sigma, top.b.BE1.chord
+    print top.b.BE2.r, top.b.BE2.sigma, top.b.BE2.chord
+    print top.b.BE3.r, top.b.BE3.sigma, top.b.BE3.chord
+    print top.b.BE4.r, top.b.BE4.sigma, top.b.BE4.chord
+    print top.b.BE5.r, top.b.BE5.sigma, top.b.BE5.chord
+    
+    from openmdao.lib.drivers.api import SLSQPdriver
+    top.add('driver', SLSQPdriver())
+    top.driver.add_parameter('b.chord_hub', low=.1, high=2)
+    top.driver.add_parameter('b.chord_tip', low=.1, high=2)
+    top.driver.add_parameter('b.twist_hub', low=-5, high=50)
+    top.driver.add_parameter('b.twist_tip', low=-5, high=50)
+    top.driver.add_parameter('b.rpm', low=20, high=300)
+    top.driver.add_parameter('b.r_tip', low=1, high=10)
+
+    top.driver.add_objective('-b.data.Cp')
+
+
+    top.run()
+    print 
+    print
+    print top.b.rpm
+    print top.b.data.Cp
+    print 'top.b.chord_hub: ', top.b.chord_hub
+    print 'top.b.chord_tip: ', top.b.chord_tip
+    print 'lambda: ', top.b.perf.data.tip_speed_ratio
+    print top.b.BE0.r, top.b.BE0.sigma, top.b.BE0.chord
+    print top.b.BE1.r, top.b.BE1.sigma, top.b.BE1.chord
+    print top.b.BE2.r, top.b.BE2.sigma, top.b.BE2.chord
+    print top.b.BE3.r, top.b.BE3.sigma, top.b.BE3.chord
+    print top.b.BE4.r, top.b.BE4.sigma, top.b.BE4.chord
+    print top.b.BE5.r, top.b.BE5.sigma, top.b.BE5.chord
+
+
+
+

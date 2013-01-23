@@ -5,7 +5,8 @@ In OpenMDAO data recording is done through a special type of object called a Cas
 with a number of different kinds of case recorders built into the standar library, but you could also design 
 your own if you ahve special needs. 
 
-From openmdao.lib.casehandlers.api you can get: 
+From openmdao.lib.casehandlers.api you can get:
+
 * DumpCaseRecorder: Dumps all case data to stdout
 * CSVCaseRecorder: Saves all case data to csv file
 * DBCaseRecorder: Saves all case data to a SQLite database

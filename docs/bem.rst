@@ -7,6 +7,7 @@ to account for the actual geometry of wind turbine in our analysis.
 
 We're going to build our more complex model as an OpenMDAO Assembly, and make use of
 a number of OpenMDAO more advanced features: 
+
 * VariableTrees for Data Encapsulation
 * Automatic unit conversions between components
 * Assembly level variables Assemblies as Components
@@ -33,7 +34,7 @@ want to build them yourself, just create a new file in your project and copy the
 just read through the component details and we'll get the assembly construction in the GUI after that. 
 
 Blade Element Component 
-========================================================
+------------------------------------------------------------------------
 
 The code for a blade element is below. There are a lot of inputs and outputs, and 
 the calculations are not trivial. However there are a couple of key features to take note of. 
@@ -69,8 +70,8 @@ for axial and tangential induction factors. This iteration is called for by BEM 
 
 
 
-Blade Element Rotor Performance Component 
-========================================================
+Rotor Performance Component 
+------------------------------------------------------------------------
 
 A rotor is made up from a set of blade elements. To calculate rotor performance data from each 
 element we will define a new BEMperf class. This class is a lot simpler than BladeElement, but 
@@ -220,8 +221,8 @@ members of the array at the same time.
                               default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
 
 
-Basic BEM Rotor Assembly 
-========================================================
+BEM Rotor Assembly 
+------------------------------------------------------------------------
 
 Now that we've defined the two primary components, we can create the an assembly that uses them to model 
 a wind turbine. The component definition requires some coding, but this plugin has already provided that
@@ -241,9 +242,10 @@ small green circle on the right of *BE0* to small circle on the top of *perf*. T
 dialog.  
 
 .. figure:: connection.png
-    :align:center
+    :align: center
 
 We want to connect three variables from *BE0* to *perf*: 
+
 * *BE0.delta_Ct* to *perf.delta_Ct[0]*
 * *BE0.delta_Cp* to *perf.delta_Cp[0]*
 * *BE0.lambda_r* to *perf.lambda_r[0]*
@@ -254,7 +256,7 @@ connect. When each connection is made, it will get drawn in the dialog so you ca
 When you're done, it will look like this: 
 
 .. figure:: connection_dialog.png
-    :align:center
+    :align: center
 
 Go ahead and create similar connections for the other two BladeSegment, remembering to increment 
 the array index to *1* and then *2* for each one. 
@@ -272,28 +274,40 @@ carefully picked values into each of them, just for the sake of argument. So now
 Right click on the ``top`` assembly and select ``run`` from the menu. The assembly and the driver will both turn 
 green, but none of the other components will. Why not? Well, take a look at the workflow. Even though you connected up 
 all your components properly and (theoretically) set some good values into the inputs, you never added anything to the
-workflow. The last time you did not have to put anything into the assembly's workflow yourself, it just happened automatically. 
+workflow. 
+
+.. figure:: empty_workflow.png
+    :align: center
+
+The last time you did not have to put anything into the assembly's workflow yourself, it just happened automatically. 
 That automatic workflow came from adding parameters to the driver. When you did that, OpenMDAO figured out that if the driver 
 was going to vary some values, then the components attached to them would need to be executed. In this case though, we've 
 not done anything to the driver. In fact, it's just the default ``RunOnce`` driver which can't even accept any parameters or 
 objectives. So the workflow will need to be created manually. Drag each of the components into the workflow, 
 and then tell the assembly to run again. Now, all of the components will actually execute. 
 
+.. figure:: full_workflow.png
+    :align: center
+
 BEM Rotor Assembly as a Component
-========================================================
+------------------------------------------------------------------------
 
 If you were really designing using BEM to do the aerodynamic design for a wind turbine, then you'll be working with a 
-whole design team. The team will probably want to run your areodynamic analysis as part of a larger model that includes 
-as structural analysis of the rotor blades and potentailly of the tower as well. An OpenMDAO Assembly class is a sub-class 
-of Component. That means that you can add i/o to an assembly and use it as a Component in a larger model. 
+whole design team. The team will probably want to run your areodynamic analysis as part of a larger model of the actual 
+wind turbine system. Since OpenMDAO Assembly class is a sub-class 
+of Component you can add i/o to an assembly and use it as a component in a larger model. 
 
-So lets take a look at what the interface for BEM analysis would look like: 
+So lets take a look at what the i/o for BEM analysis would look like: 
 
 
 .. testcode:: bem_definition
 
     from openmdao.main.api import Assembly
     from openmdao.lib.datatypes.api import Float, Int
+
+    class FlowConditions(VariableTree):     
+        rho = Float(1.225, desc="air density", units="kg/m**3")
+        V = Float(7., desc="free stream air velocity", units="m/s")
 
     class BEM(Assembly):
         """Blade Rotor with 3 BladeElements"""
@@ -338,16 +352,16 @@ This code looks really similar to the previous component code we defined, except
 inherits from ``Assembly`` instead of ``Component``. We've defined 9 scalar input design variables and one 
 VariableTree that holds an additional 2 scalar inputs that deal with the wind conditions the turbine would 
 operate in. We also pre-defined the three BladeElement components, the BEMPerf component, connected them 
-all up, and added them to the workflow. 
+all up, and added them to the workflow. That way, you don't need to re-do all the connections by hand. 
 
 Create another new project in the OpenMDAO GUI. This time, the first thing you 
 should do is remove the default ``top`` Assembly that is defined automatically. We're going to use the ``BEM`` 
 assembly instead. Right click on ``top`` and select ``remove``. Then filter the Library with ``nrel`` again 
 and create an instance of the ``BEM`` assembly to work with. You can name the new assembly ``top`` again, or any
-other name you want. Your workspace will look like this 
-when your done: 
+other name you want. Your workspace will look like this when your done: 
 
-[[screenshot here]] 
+.. figure:: bem_workspace.png
+    :align: center
 
 You have an assembly, with i/o and components connected and hooked up to a workflow. But you still need to 
 connect the assembly i/o to the components it holds. There are two ways you can do that. The first way, assuming
@@ -361,10 +375,41 @@ We're almost done, but we still need to deal with chord, radius, and twist. Chor
 forward, but if you look at twist carefully you will see a small problem. For the BladeElement, twist is given 
 in radians. But in the BEM assembly, it's defined in degrees. OpenMDAO can handle this situation just fine. 
 When you try to connect two variables of different but compatible units, OpenMDAO will convert them for you 
-on the fly. If you try to connect two varaibles with incompatible units, you'll get an error. Consider that 
-strong incentive to always defined units on variables where appropriate. Give it a shot. Try to connect the 
-*radius_hub* variable from the assembly to *BE0.theta*. You'll get an error. 
+on the fly. If you try to connect two varaibles with incompatible units, you'll get an error. 
+Give it a shot. Try to connect the *radius_hub* variable from the assembly to *BE0.theta*. You'll get an error. 
 Then try to connect *twist_hub* to *BE0.theta*. That will work just fine. 
+
+Connecting the hub and tip variables to *BE0* and *BE2* only gets us part of the way there. We still need to 
+deal with *BE1*, or potentially more intermediate BladeSegments if we had them. Lets assume that this rotor 
+has a linear distribution for chord and twist. We'll also space the blade segment radii out linearly from the 
+root to the tip. OpenMDAO provides a utility class for this, called ``LinearDistribution``. If you filter 
+the Library with ``linear``, you'll see it. You can create one called ``twist_dist``. When asked, set the 
+number of elements to 3 and the units to 'deg'. You don't have to specify units on a LinearDistribution, but 
+in this case it's necessary to ensure proper unit conversion. Then you can connect the *twist_hub*
+and *twist_tip* variables from the assembly to the *twist_dist.start* and *twist_dist.end* variables. 
+Now you can connect the elements from the array *twist_dist.output* to *BE0.theta*, *BE1.theta*, and *BE2.theta*. 
+
+Notice that you just connected an item from an array to scalar variable. OpenMDAO allows this type of connection,
+and performs the same kind of units validation that it does for regular scalar to scalar connections. Similarly, 
+you can connect a sub-variable from within a VariableTree to a scalar variable on another component. In fact
+we did just that by connecting *free_stream.rho* to *BE0.rho*, *BE1.rho*, and *BE2.rho*. 
+
+At this point, we're almost done. We still need to add LinearDistribution instances for the chord and radius values. We also 
+have a few more assembly level connections to make. You might have noticed that the assembly does not have any outputs.
+So far we've only created inputs. We said there was two ways to create assembly level varaibles. The first is to manually 
+create them and then issue connections, like we just explored. The second way is to use a passthrough. Right click on the 
+assembly and select ``Edit Passthroughs`` from the menu. 
+
+.. figure:: passthroughs.png
+    :align: center
+
+Then you can find the *perf.data* in the outputs column (right side) 
+and check it. This will automatically create an assembly level variable called *data* and connect it to *perf.data*. 
+This is really just a shortcut for the first procedure, but it's easy to do at runtime if you have some components who's 
+inputs or outputs you want to expose at the assembly border. When you create a passthrough, it creates an exact copy of the variable, 
+including name and units information. If you want to change the units across the boundry, like with the twist variables,
+you have to use the first method. 
+
 
         
 
