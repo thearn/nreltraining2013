@@ -18,9 +18,9 @@ CaseRecorder objects are used by drivers to record the information from your run
 is the relevant data from any single run of a driver through its workflow. So in our actuator disk example, 
 a case represents one iteration of the optimizer. 
 
-Drivers have a slot, called ``recorders`` which can accept any number of CaseRecorder objects. For each iteration
+Drivers have a slot, called ``recorders`` which can accept any number of CaseRecorder objects. For each iteration, 
 all the recorders in the slot will each get handed the case to save in their own way. This gives you the freedom to 
-save your case data in multiple way simultaneously. 
+save your case data in multiple ways simultaneously. 
 
 Trying it out
 -------------------------------------------------------------
