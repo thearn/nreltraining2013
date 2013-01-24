@@ -13,7 +13,6 @@ Contents:
    recording_data
    bem
    bem_design
-   summary
    srcdocs
    pkgdocs
 
