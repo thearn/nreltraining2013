@@ -1,11 +1,11 @@
 Recording Data from your Runs
 =============================================================
 Running an optimization in OpenMDAO is great, but it's not really useful unless you can record the results. 
-In OpenMDAO data recording is done through a special type of object called a CaseRecorder. OpenMDAO comes 
-with a number of different kinds of case recorders built into the standar library, but you could also design 
-your own if you ahve special needs. 
+In OpenMDAO, data recording is done through a special type of object called a CaseRecorder. OpenMDAO comes 
+with a number of different kinds of CaseRecorders built into the standard library, but you could also design 
+your own if you have special needs. 
 
-From openmdao.lib.casehandlers.api you can get:
+From ``openmdao.lib.casehandlers.api`` you can get:
 
 * DumpCaseRecorder: Dumps all case data to stdout
 * CSVCaseRecorder: Saves all case data to csv file
@@ -14,7 +14,7 @@ From openmdao.lib.casehandlers.api you can get:
 
 Drivers and CaseRecorders
 -------------------------------------------------------------
-CaseRecorder objects are used by drivers to record the information from your runs. In OpenMDAO a case 
+CaseRecorder objects are used by drivers to record the information from your runs. In OpenMDAO, a case 
 is the relevant data from any single run of a driver through its workflow. So in our actuator disk example, 
 a case represents one iteration of the optimizer. 
 
