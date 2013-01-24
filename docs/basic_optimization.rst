@@ -11,11 +11,11 @@ call it ``Betz Limit``. Once the project opens up, filter the library with ``nre
 classes for this tutorial. Add an instance of ``actuator disk`` from the libarary to the assembly called ``top``.
 We named our instance ``ad``.  
 
-Now you've added a component instance into the top assembly. But you can't do much with it, except set the inputs 
+Now you've added a component instance into the ``top`` Assembly. But you can't do much with it, except set the inputs 
 and run that component. To set up an optimization, you need to add in a different driver. So filter the library with 
 ``opt`` to see a list of optimizers. We're going to start with ``SLSQPdriver`` for this tutorial. Drag an instance of 
-SLSQPdriver over to the top assembly, and drop it on top of the RunOnce driver that's already there. You should 
-see the driver highlight in blue when you're hovering over it. When you drop on top of an existing component you're 
+SLSQPdriver over to the ``top`` Assembly, and drop it on top of the RunOnce driver that's already there. You should 
+see the driver highlight in blue when you're hovering over it. When you drop a component onto an existing component you're 
 replacing that component, rather than creating a new one. 
 
 .. _`relace_driver`:
@@ -27,8 +27,9 @@ replacing that component, rather than creating a new one.
 
 Configure the Optimization
 ---------------------------
-Once you have the SLSQPdriver instance in there, you're ready to configure the optimization. Double click on the driver
+Once you have the SLSQPdriver instance in there, you're ready to configure the optimization. Double-click on the driver
 to bring up its editor window. You should see a few tabs in that window: 
+
 * Inputs
 * Parameters
 * Trigger 
@@ -37,20 +38,21 @@ to bring up its editor window. You should see a few tabs in that window:
 * Workflow
 * Slots
 * Constraints
-The inputs and the outputs tabs contain variables that are specific to the driver. These could be for settings specific to the 
-optimizer or for framework variables like execution count. To set up the optimization we'll look at the Parameters and Objectives tabs
-first.
 
-We're going to set up an optimization to look for Betz's limit. This is a we'll known result that states that for a wind turbine, as you try 
-to exract more and more velocity from the incoming wind the best
+The Inputs and Outputs tabs contain variables that are specific to the driver. These could be for settings specific to the 
+optimizer or for framework variables like execution count. To set up the optimization we'll first look at the Parameters and Objectives tabs.
+
+We're going to set up an optimization to look for Betz's limit. This is a well-known result that states that for a wind turbine, as you try 
+to extract more and more velocity from the incoming wind, the best
 you can do is to extract about 60% of the power from the wind. This result comes from an analysis of the equations used to build 
-our ActuatorDisk component. We'll try to use an optimizer to confirm that our component returns the right value for Betz's limit. First 
-open the parameters tab. Click on the ``add parameter`` button. A small dialog will open up that lets you specify which parameter you want 
+our ActuatorDisk component. We'll try to use an optimizer to confirm that our component returns the correct value for Betz's limit.
+
+First, open the parameters tab. Click on the ``add parameter`` button. A small dialog will open up that lets you specify which parameter you want 
 to give to the optimizer. If you hit the down arrow, you will get a list of all the available variables. Pick ``ad.a``. This is the 
 axial induction factor, or a ratio of the incoming wind velocity to the velocity after it exits the turbine. You'll notice that when you 
 picked that variable, the low and high were automatically filled in for you. These came from the variable metadata which specified a low and a
 high of 0 and 1 respectively. You could shrink these ranges if you wished, but not expand them. 0 and 1 are hard limits set by the component that 
-can't be violated. We'll leave them as is. You will also notice the optional ``scaler``, ``adder`` fields. These are available 
+can't be violated. We'll leave them as-is. You will also notice the optional ``scaler``, ``adder`` fields. These are available 
 for you to scale and shift your parameter if necessary to give a more stable optimization. Once you hit ``ok``, you should see the dataflow 
 diagram change a bit. The blue connector that showed up indicates that there is an implicit connection between the driver and the component. 
 The connection is implicit because the driver will set the value of `ad.a` during the optimization, but that you can also change the value. 
@@ -62,12 +64,12 @@ Whatever you set the value to will be used as the initial condition for the opti
 
 If you double click on ad instance now, 
 you will see that the ``a`` variable in the editor window is also highlighted in blue. All variables with impicit connections will be
-showin in blue. 
+show in in blue. 
 
 .. figure:: connected_var_comp_editor.png
     :align: center
 
-We also need to specify an objective. Go to the objective tab and click ``add objective``. Optimizers by default will 
+We also need to specify an objective. Go to the driver's Objectives tab and click ``add objective``. Optimizers by default will 
 try to minimize the objective, so set the objective to ``-ad.Cp`` to get a maximization. You'll see a new feedback connector 
 show up in the dataflow when you do this. This indicates that the optimizer is now dependent on values from the component. 
 
@@ -84,17 +86,14 @@ the optimizer was varying a value in the ``ad`` component, that it would need to
 workflow for you. It's important to remember that OpenMDAO distinguished between the dataflow and the workflow. The dataflow describes which 
 components communicate with others, but it says nothing about when that communication happens. The order of execution is determined by the 
 workflow. Although the dataflow does not define the workflow, it can constraint it. For example, if you have two components `a` and `b`, 
-where `a` has an output connected to the input of `b`, then you must run `a` before `b`.
-
- In a lot of cases the workflow that is automatically created for you will work just fine. But if you need to modify it to add a sub-solver 
- loop or introduce some metamodel training then the flexibility is there. 
+where `a` has an output connected to the input of `b`, then you must run `a` before `b`.  In most cases, the automatically-created workflow will work just fine.  Just know that if you need to modify the workflow to add a sub-solver loop or introduce some metamodel training, the flexibility is there. 
 
 
 Run the Optimization
 ---------------------------
 
-So you're ready to run. Just right click on the assembly, ``top``, and pick ``run`` from the menu. This will cause the whole assembly to execute
-and will run your optimization for you. double click on the component, when it's finished, you will see that the optimizer found a value of 
-approximately 1/3 for axial induction factor, yeilding a power coefficient just under .6. Congradulations, you have just found betz's limit! 
+So you're ready to run. Just right-click on the assembly, ``top``, and pick ``run`` from the context menu. This will cause the whole assembly to execute
+and will run your optimization for you. Double-click on the component when it's finished, and you will see that the optimizer found a value of 
+approximately 1/3 for axial induction factor, yielding a power coefficient just under .6. Congratulations, you have just found Betz's limit! 
 You can close down the project for now. 
 
