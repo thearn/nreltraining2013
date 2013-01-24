@@ -88,9 +88,16 @@ OpenMDAO supports. We've built python components, and linked them together into 
 
 Although we've seen many features of OpenMDAO, there are still plenty of other capabilities to check out. Our documentation includes tutorials on 
 working with different kinds of code wrappers, so you can interface your analyses with OpenMDAO. There are examples of wrapping `C and Fortran with f2py <http://openmdao.org/docs/plugin-guide/extension_plugin.html#creating-an-extension-with-f2py>`_ and integrating `C or C++ with SWIG <http://openmdao.org/docs/plugin-guide/extension_plugin.html#creating-an-extension-with-swig>`_. If you file wrapping codes, there are tools to help with that. There are 
-tools for both standard `file wrapping <http://openmdao.org/docs/plugin-guide/filewrapper_plugin.html>`_ and for `fortran namelist inputs <http://openmdao.org/docs/plugin-guide/filewrapper_plugin.html#generating-the-input-file-fortran-namelists>`_. 
+tools for both standard `file wrapping <http://openmdao.org/docs/plugin-guide/filewrapper_plugin.html>`_ and for `fortran namelist inputs <http://openmdao.org/docs/plugin-guide/filewrapper_plugin.html#generating-the-input-file-fortran-namelists>`_. We also have tutorials for working with other common MDAO techniques, like `MetaModeling <http://openmdao.org/docs/surrogate/index.html>`_ and `Optimization architectures <http://openmdao.org/docs/mdao/index.html>`_. And even that does not exhaust all the capabilities. 
 
-We also have tutorials for working with other common MDAO techniques, like `MetaModeling <http://openmdao.org/docs/surrogate/index.html>`_ and `Optimization architectures <http://openmdao.org/docs/mdao/index.html>`_. 
+If you're insterested in contributing to the OpenMDAO project, there are plenty of options. We're an open source project, and we welcome code contributions
+from the community. We also have a plugin system in OpenMDAO that allows you to produce plugins for just about anythign within the framework. We've
+already had a few plugin contributions from community. We host our plugins on a github project called 
+`OpenMDAO-Plugins <http://github.com/openmdao-plugins.>`_
+If you have any questions, our `forums <http://openmdao.org/forum>`_ should be your first stop. The forums are actively monitored by the OpenMDAO development team and you'll get an answer very quickly from there! 
+
+
+
 
 
 
