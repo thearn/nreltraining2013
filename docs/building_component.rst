@@ -21,6 +21,23 @@ files to have the changes take effect in your OpenMDAO project.
 Defining a Component 
 =========================================
 
+In this part of the tutorial, we're going to define a component that uses 
+actuator disk theory to provide a very simple model of a wind turbine. With 
+actuator disk theory, we will reproduce a very well known engineering design
+limitation called the Betz limit. 
+
+.. figure:: actuator_disk.png
+  :align: center
+
+With actuator disk theory, you treat the entire rotor a single disk that 
+extracts velocity uniformly from the incomming flow, and converts it to 
+power. If we define the upstream, rotor, and downstream velocities as 
+:math:`V_u`, :math:`V_r`, :math:`V_d` respectively, then you can describe the 
+axial induction factor, :math:`a`, as the amount of velolcity extracted from the 
+flow. :math:`a = \frac{V_u-V_r}{V_r}`
+
+
+
 A component takes a set of inputs and operates on them to produce a set of
 outputs. In the OpenMDAO framework, a class called *Component*
 provides this behavior. Any Component has inputs and outputs and
