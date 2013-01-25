@@ -46,6 +46,79 @@ the calculations are not trivial. However there are a couple of key features to 
     from openmdao.lib.datatypes.api import Float,Int
 
     class BladeElement(Component):
+        """Calculations for a single radial slice of a rotor blade"""
+
+        #inputs
+        a_init = Float(0.2, iotype="in", desc="initial guess for axial inflow factor")
+        b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
+        rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
+        r = Float(5., iotype="in", desc="mean radius of the blade element", units="m")
+        dr = Float(1., iotype="in", desc="width of the blade element", units="m")
+        twist = Float(1.616, iotype="in", desc="local twist angle", units="rad")
+        chord = Float(.1872796, iotype="in", desc="local chord length", units="m", low=0)
+        B = Int(3, iotype="in", desc="Number of blade elements")
+
+        rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
+        V_inf = Float(7, iotype="in", desc="free stream air velocity", units="m/s")
+
+        #outputs
+        V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
+        V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
+        V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
+        omega = Float(iotype="out", desc="average angular velocity for element", units="rad/s")
+        sigma = Float(iotype="out", desc="Local solidity")
+        alpha = Float(iotype="out", desc="local angle of attack", units="rad")
+        delta_Ct = Float(iotype="out", desc="section thrust coefficient", units="N")
+        delta_Cp = Float(iotype="out", desc="section power coefficent")
+        a = Float(iotype="out", desc="converged value for axial inflow factor")
+        b = Float(iotype="out", desc="converged value for radial inflow factor")
+        lambda_r = Float(8, iotype="out", desc="local tip speed ratio")
+        phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
+
+        def __init__(self): 
+            super(BladeElement, self).__init__()
+
+            #rough linear interpolation from naca 0012 airfoil data
+            rad = np.array([0., 13., 15, 20, 30])*pi/180
+            self.cl_interp = interp1d(rad, [0, 1.3, .8, .7, 1.1], fill_value=0.001, bounds_error=False)
+
+            rad = np.array([0., 10, 20, 30, 40])*pi/180
+            self.cd_interp = interp1d(rad, [0., 0., 0.3, 0.6, 1.], fill_value=0.001, bounds_error=False)
+
+        def _coeff_lookup(self, i):
+            C_L = self.cl_interp(i)
+            C_D = self.cd_interp(i)    
+            return C_D, C_L
+            
+        def execute(self):    
+            self.sigma = self.B*self.chord / (2* np.pi * self.r)
+            self.omega = self.rpm*2*pi/60.0
+            omega_r = self.omega*self.r
+            self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
+
+            result = fsolve(self._iteration, [self.a_init, self.b_init])
+            self.a = result[0]
+            self.b = result[1]
+
+            self.V_0 = self.V_inf - self.a*self.V_inf
+            self.V_2 = omega_r-self.b*omega_r
+            self.V_1 = (self.V_0**2+self.V_2**2)**.5
+
+            q_c = self.B*.5*(self.rho*self.V_1**2)*self.chord*self.dr
+            cos_phi = cos(self.phi)
+            sin_phi = sin(self.phi)
+            C_D, C_L = self._coeff_lookup(self.alpha)
+            self.delta_Ct = q_c*(C_L*cos_phi-C_D*sin_phi)/(.5*self.rho*(self.V_inf**2)*(pi*self.r**2))
+            self.delta_Cp = self.b*(1-self.a)*self.lambda_r**3*(1-C_D/C_L*tan(self.phi))
+
+        def _iteration(self, X):
+            self.phi = np.arctan(self.lambda_r*(1+X[1])/(1-X[0]))
+            self.alpha = pi/2-self.twist-self.phi
+            C_D, C_L = self._coeff_lookup(self.alpha)
+            self.a = 1./(1 + 4.*(np.cos(self.phi)**2)/(self.sigma*C_L*np.sin(self.phi)))
+            self.b = (self.sigma*C_L) / (4* self.lambda_r * np.cos(self.phi)) * (1 - self.a)
+
+            return (X[0]-self.a), (X[1]-self.b)
         
 
         
@@ -99,80 +172,49 @@ that go along with it.
         J = Float(desc="advance ratio")
         #eta = Float(desc="turbine efficiency")
 
-    class BladeElement(Component):
-        """Calculations for a single radial slice of a rotor blade"""
+    class BEMPerf(Component):
+        """collects data from set of BladeElements and calculates aggregate values"""
 
-        #inputs
-        a_init = Float(0.2, iotype="in", desc="initial guess for axial inflow factor")
-        b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
-        rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
-        r = Float(5., iotype="in", desc="mean radius of the blade element", units="m")
-        dr = Float(1., iotype="in", desc="width of the blade element", units="m")
-        theta = Float(1.616, iotype="in", desc="local pitch angle", units="rad")
-        chord = Float(.1872796, iotype="in", desc="local chord length", units="m", low=0)
-        B = Int(3, iotype="in", desc="Number of blade elements")
+        r = Float(.8, iotype="in", desc="tip radius of the rotor", units="m")
+        rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
 
-        rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
-        V_inf = Float(7, iotype="in", desc="free stream air velocity", units="m/s")
+        free_stream = Slot(FlowConditions, iotype="in") 
 
-        #outputs
-        V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
-        V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
-        V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
-        omega = Float(iotype="out", desc="average angular velocity for element", units="rad/s")
-        sigma = Float(iotype="out", desc="Local solidity")
-        alpha = Float(iotype="out", desc="local angle of attack", units="rad")
-        delta_Ct = Float(iotype="out", desc="section thrust coefficient", units="N")
-        delta_Cp = Float(iotype="out", desc="section power coefficent")
-        a = Float(iotype="out", desc="converged value for axial inflow factor")
-        b = Float(iotype="out", desc="converged value for radial inflow factor")
-        lambda_r = Float(8, iotype="out", desc="local tip speed ratio")
-        phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
+        data = Slot(BEMPerfData, iotype="out")
 
-        def __init__(self): 
-            super(BladeElement, self).__init__()
+        #this lets the size of the arrays vary for different numbers of elements
+        def __init__(self, n=10):
+            super(BEMPerf, self).__init__()
 
-            #rough linear interpolation from naca 0012 airfoil data
-            rad = np.array([0., 13., 15, 20, 30])*pi/180
-            self.cl_interp = interp1d(rad, [0, 1.3, .8, .7, 1.1], fill_value=0.001, bounds_error=False)
+            #needed initialization for VTs
+            self.add('data', BEMPerfData())  
+            self.add('free_stream', FlowConditions())
 
-            rad = np.array([0., 10, 20, 30, 40])*pi/180
-            self.cd_interp = interp1d(rad, [0., 0., 0.3, 0.6, 1.], fill_value=0.001, bounds_error=False)
+            #array size based on number of elements
+            self.add('delta_Ct', Array(iotype='in', desc='thrusts from %d different blade elements'%n,
+                                   default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
+            self.add('delta_Cp', Array(iotype='in', desc='Cp integrant points from %d different blade elements'%n,
+                                   default_value=np.ones((n,)), shape=(n,), dtype=Float))
+            self.add('lambda_r', Array(iotype='in', desc='lambda_r from %d different blade elements'%n,
+                                   default_value=np.ones((n,)), shape=(n,), dtype=Float))      
+                                     
+        def execute(self):
+            self.data = BEMPerfData()  #emtpy the variable tree
 
-        def _coeff_lookup(self, i):
-            C_L = self.cl_interp(i)
-            C_D = self.cd_interp(i)    
-            return C_D, C_L
-            
-        def execute(self):    
-            self.sigma = self.B*self.chord / (2* np.pi * self.r)
-            self.omega = self.rpm*2*pi/60.0
-            omega_r = self.omega*self.r
-            self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
+            V_inf = self.free_stream.V
+            rho = self.free_stream.rho
 
-            result = fsolve(self._iteration, [self.a_init, self.b_init])
-            self.a = result[0]
-            self.b = result[1]
+            norm = (.5*rho*(V_inf**2)*(pi*self.r**2))
+            self.data.Ct= np.trapz(self.delta_Ct, x=self.lambda_r)
+            self.data.net_thrust = self.data.Ct*norm
 
-            self.V_0 = self.V_inf + self.a*self.V_inf
-            self.V_2 = omega_r-self.b*omega_r
-            self.V_1 = (self.V_0**2+self.V_2**2)**.5
+            self.data.Cp = np.trapz(self.delta_Cp, x=self.lambda_r) * 8. / self.lambda_r.max()**2
+            self.data.net_power = self.data.Cp*norm*V_inf
 
-            q_c = self.B*.5*(self.rho*self.V_1**2)*self.chord*self.dr
-            cos_phi = cos(self.phi)
-            sin_phi = sin(self.phi)
-            C_D, C_L = self._coeff_lookup(self.alpha)
-            self.delta_Ct = q_c*(C_L*cos_phi-C_D*sin_phi)/(.5*self.rho*(self.V_inf**2)*(pi*self.r**2))
-            self.delta_Cp = self.b*(1-self.a)*self.lambda_r**3*(1-C_D/C_L*tan(self.phi))
+            self.data.J = V_inf/(self.rpm/60.0*2*self.r)
 
-        def _iteration(self, X):
-            self.phi = np.arctan(self.lambda_r*(1+X[1])/(1-X[0]))
-            self.alpha = self.theta - self.phi
-            C_D, C_L = self._coeff_lookup(self.alpha)
-            self.a = 1./(1 + 4.*(np.cos(self.phi)**2)/(self.sigma*C_L*np.sin(self.phi)))
-            self.b = (self.sigma*C_L) / (4* self.lambda_r * np.cos(self.phi)) * (1 - self.a)
-
-            return (X[0]-self.a), (X[1]-self.b)
+            omega = self.rpm*2*pi/60
+            self.data.tip_speed_ratio = omega*self.r/self.free_stream.V
 
 
 The two classes, ``FlowConditions`` and ``BEMPerfData`` both inherit from ``VariableTree``. In OpenMDAO, 
@@ -189,7 +231,7 @@ for any component.
 
 Inside ``FlowConditions``, there are two variables. Just like before, they have a default value, a description, and some 
 units defined. Notably missing, however, is an *iostatus*. When you are defining the VariableTree sub-class, *iostatus* is not yet 
-relevant. When added to a component, it could be specified as an input, and output, or possibly one of each. Iostatus is defined when the class is used as i/o in a component, not before. For our ``BEMPerf`` component, we use an instance of FlowConditions
+relevant. When added to a component, the variable tree *iostatus* as a whole could be specified as input or as output. Iostatus is defined when the class is used as i/o in a component, not before. For our ``BEMPerf`` component, we use an instance of FlowConditions
 called ``free_stream``. 
 
 :: 
@@ -260,7 +302,7 @@ When you're done, it will look like this:
 
 Go ahead and create similar connections for the other two BladeSegment, remembering to increment 
 the array index to *1* and then *2* for each one. 
-As the connections are made, you should see the dateflow react by drawing dependency arrows between
+As the connections are made, you should see the dataflow react by drawing dependency arrows between
 each of the BladeElements and the perf component. These will be black, indicating that there is an 
 explicit data dependency. OpenMDAO strictly enforces explicit connections so that if you tried to set a 
 value into a connected input, you would get an error. Similarly, you can't give a connected input as a parameter 
@@ -268,7 +310,7 @@ to a driver. The driver can not vary that value, since it's explicitly connected
 
 Now, you've connected up your model. You're ready to run it, right? Well, not quite yet. For one thing
 your BladeElement instances all have default values for their inputs. It does not make much sense to have 
-all three of them at the set to the same radius, twist, chord, etc. But lets pretend you set some 
+all three of them set to the same radius, twist, chord, etc. But lets pretend you set some 
 carefully picked values into each of them, just for the sake of argument. So now are you ready to run? Try it. 
 
 Right click on the ``top`` assembly and select ``run`` from the menu. The assembly and the driver will both turn 
@@ -289,11 +331,11 @@ and then tell the assembly to run again. Now, all of the components will actuall
 .. figure:: full_workflow.png
     :align: center
 
-BEM Rotor Assembly as a Component
+BEM Rotor as a Nested Assembly
 ------------------------------------------------------------------------
 
 If you were really designing using BEM to do the aerodynamic design for a wind turbine, then you'd be working with a 
-whole design team. The team would probably want to run your areodynamic analysis as part of a larger model of the actual 
+whole design team. The team would probably want to run your aerodynamic analysis as part of a larger model of the actual 
 wind turbine system. Since OpenMDAO's Assembly class is a sub-class 
 of Component, you can add i/o to an assembly and use it as a component in a larger model. 
 
@@ -354,13 +396,17 @@ VariableTree that holds an additional 2 scalar inputs that deal with the wind co
 operate in. We also pre-defined the three BladeElement components, the BEMPerf component, connected them 
 all up, and added them to the workflow. That way, you don't need to re-do all the connections by hand. 
 
-Create another new project in the OpenMDAO GUI. This time, the first thing you 
-should do is remove the default ``top`` Assembly that is defined automatically. We're going to use the ``BEM`` 
-assembly instead. Right click on ``top`` and select ``remove``. Then filter the Library with ``nrel`` again 
-and create an instance of the ``BEM`` assembly to work with. You can name the new assembly ``top`` again, or any
-other name you want. Your workspace will look like this when your done: 
+Create another new project in the OpenMDAO GUI. Filter the Library with ``nrel`` again 
+and create an instance of the ``BEM`` assembly inside the default ``top`` that is already there. 
+Whe named our instance ``bem``. Your workspace will look like this when you're done: 
 
 .. figure:: bem_workspace.png
+    :align: center
+
+You can click on the small ``+`` in the upper right corner of ``bem`` to see the contents of your 
+newly created assembly. 
+
+.. figure:: bem_workspace_expanded.png
     :align: center
 
 You have an assembly, with i/o and components connected and hooked up to a workflow. But you still need to 
@@ -372,21 +418,47 @@ you can connect the ``rho`` and ``V`` variables from the ``free_stream`` Variabl
 to the corresponding variables in the BladeElement. Repeat that for ``BE1``, ``BE2``, and ``perf``. 
 
 We're almost done, but we still need to deal with chord, radius, and twist. Chord and Radius are pretty straightforward, but if you look at twist carefully you will see a small problem. For the BladeElement, twist is given 
-in radians. But in the BEM assembly, it's defined in degrees. Fortunately, OpenMDAO can easily handle this situation. 
+in radians. But in the BEM assembly, it's defined in degrees. 
+
+Twist in the Rotor Assembly: 
+
+:: 
+
+    twist_tip = Float(93.58, iotype="in", desc="twist angle at the tip radius", units="deg")
+
+Twist in the Blade Element:
+
+::
+
+    twist = Float(1.616, iotype="in", desc="local pitch angle", units="rad")
+
+
+Fortunately, OpenMDAO can easily handle this situation. 
 When you try to connect two variables of different but compatible units, OpenMDAO will convert them for you 
 on the fly. If you try to connect two varaibles with incompatible units, you'll get an error. 
-Give it a shot. Try to connect the *radius_hub* variable from the assembly to *BE0.theta*. You'll get an error. 
-Then try to connect *twist_hub* to *BE0.theta*. That will work just fine. 
+Give it a shot. Try to connect the *radius_hub* variable from the assembly to *BE0.twist*. You'll get an error. 
+Then try to connect *twist_hub* to *BE0.twist*. That will work just fine. 
+
+.. figure:: twist_connection.png
+    :align: center
+
 
 Connecting the hub and tip variables to *BE0* and *BE2* only gets us part of the way there. We still need to 
 deal with *BE1*, or potentially more intermediate BladeSegments if we had them. Lets assume that this rotor 
 has a linear distribution for chord and twist. We'll also space the blade segment radii out linearly from the 
 root to the tip. OpenMDAO provides a utility class for this, called ``LinearDistribution``. If you filter 
 the Library with ``linear``, you'll see it. You can create one called ``twist_dist``. When asked, set the 
-number of elements to 3 and the units to 'deg'. You don't have to specify units on a LinearDistribution, but 
+number of elements to 3 and the units to 'deg' (make sure you add the quotes!). You don't have to specify units on a LinearDistribution, but 
 in this case it's necessary to ensure proper unit conversion. Then you can connect the *twist_hub*
 and *twist_tip* variables from the assembly to the *twist_dist.start* and *twist_dist.end* variables. 
-Now you can connect the elements from the array *twist_dist.output* to *BE0.theta*, *BE1.theta*, and *BE2.theta*. 
+
+.. figure:: assembly_to_twist.png
+    :align: center
+
+Now you can connect the elements from the array *twist_dist.output* to *BE0.twist*, *BE1.twist*, and *BE2.twist*. 
+
+.. figure:: twist_be.png
+    :align: center
 
 Notice that you just connected an item from an array to scalar variable. OpenMDAO allows this type of connection,
 and performs the same kind of units validation that it does for regular scalar to scalar connections. Similarly, 
@@ -395,7 +467,7 @@ we did just that by connecting *free_stream.rho* to *BE0.rho*, *BE1.rho*, and *B
 
 At this point, we're almost done. We still need to add LinearDistribution instances for the chord and radius values. We also 
 have a few more assembly-level connections to make. You might have noticed that the assembly does not have any outputs.
-So far we've only created inputs. We said there were two ways to create assembly level varaibles. The first is to manually 
+So far we've only created inputs. We said there were two ways to create assembly level variables. The first is to manually 
 create them and then issue connections, like we just explored. The second way is to use a passthrough. Right-click on the 
 assembly and select ``Edit Passthroughs`` from the menu. 
 

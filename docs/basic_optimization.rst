@@ -85,7 +85,7 @@ You might have noticed that when you added the first parameter to the optimizer,
 the optimizer was varying a value in the ``ad`` component, that it would need to be in the workflow for that driver. So it added ``ad`` to the 
 workflow for you. It's important to remember that OpenMDAO distinguished between the dataflow and the workflow. The dataflow describes which 
 components communicate with others, but it says nothing about when that communication happens. The order of execution is determined by the 
-workflow. Although the dataflow does not define the workflow, it can constraint it. For example, if you have two components `a` and `b`, 
+workflow. Although the dataflow does not define the workflow, it can constrain it. For example, if you have two components `a` and `b`, 
 where `a` has an output connected to the input of `b`, then you must run `a` before `b`.  In most cases, the automatically-created workflow will work just fine.  Just know that if you need to modify the workflow to add a sub-solver loop or introduce some metamodel training, the flexibility is there. 
 
 

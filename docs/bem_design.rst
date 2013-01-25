@@ -48,6 +48,7 @@ it should include in each row of the CSV file. Note that you have to give a list
 are important.
 
 :: 
+
     ['bem.perf.data.tip_speed_ratio','bem.perf.data.Cp','bem.perf.data.Ct']
 
 Now, run the assembly. It will take a minute to finish, since it's running so may cases. When it finishes, click on the ``Files`` tab. 
