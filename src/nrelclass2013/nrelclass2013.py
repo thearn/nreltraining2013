@@ -133,7 +133,7 @@ class BEM(Assembly):
         self.add('BE0', BladeElement())
         self.add('BE1', BladeElement())
         self.add('BE2', BladeElement())
-        self.add('perf', BEMPerf())
+        self.add('perf', BEMPerf(n=3))
 
         self.connect('BE0.delta_Ct', 'perf.delta_Ct[0]')
         self.connect('BE0.delta_Cp', 'perf.delta_Cp[0]')
