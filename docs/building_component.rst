@@ -187,7 +187,7 @@ The ``execute`` function is where you define what a component does when it runs.
 The input and output variables are attributes of the ActuatorDisk class, which means that
 they must be accessed using *self*. For example, ``self.a`` gives you the value
 stored in a. This ``self.`` can be cumbersome if you use it a lot, so you might 
-find it convinent to create a couple of function-local variables as shortcuts. 
+find it convenient to create a couple of function-local variables as shortcuts. 
 We do this with ``a`` and ``Vu``. 
 
 Often, you will already have the code for evaluating your component outputs,
@@ -198,7 +198,7 @@ With these changes made to your class, you may now close the text editor window,
 GUI screen. On the right hand side of the window, there is a ``Library`` tab. 
 You can use the Library tab to navigate the list of all available classes in your current 
 working environment. The library will include everything from the OpenMDAO standard 
-library, everything from any plugins you have installed, and anything from the files in your current project. 
+library, everything from any plugins you have installed, and everything from the files in your current project. 
 In this case, the file we've created has the component ``ActuatorDisk`` defined, so once you finish editing the file
 it should become available in your Library. 
 

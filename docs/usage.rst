@@ -3,7 +3,7 @@ Getting Started
 ================
 
 This plugin contains the documentation and component definitions for the OpenMDAO instructional class that was given at the 2013 National Renewable 
-Energy Laboratory (NREL) Wind Energy Systems Engineering workshop. The class was given by Justin Gray and Chris Heath 
+Energy Laboratory (NREL) Wind Energy Systems Engineering workshop. The class was given by Justin Gray and Christopher Heath 
 of the NASA Glenn Research Center. Justin and Chris are members of the OpenMDAO development effort, and built the 
 content of this class to demonstrate the basic usage of OpenMDAO with its GUI on some simple wind turbine design 
 problems. The class covers: 
