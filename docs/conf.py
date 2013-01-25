@@ -35,7 +35,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'nrelclass2013'
+project = u'nreltraining2013'
 copyright = u''
 
 # The version info for the project you're documenting, acts as replacement for

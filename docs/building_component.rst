@@ -235,7 +235,7 @@ Try searching for ``optimizer``. You should see the list of optimizers from the 
 To find your newly defined ``ActuatorDisk`` component, filter with "actuator". You should see two results: 
 
 * actuator_disk.ActuatorDisk
-* nrelclass2013.ActuatorDisk
+* nreltraining2013.ActuatorDisk
 
 There are two results for this search because a class named ``ActuatorDisk`` is defined in two separate 
 files. You defined it in your newly created project file, and it has also been pre-defined for you as 
@@ -248,7 +248,7 @@ They all show up because ``nrel`` appears in their file name:
 * BEMPerf
 * BEMPerfData
 * BladeElement
-* nrel2013.ActuatorDisk
+* nreltraining2013.ActuatorDisk
 * SmallBEM
 
 Running your Component

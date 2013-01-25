@@ -1,6 +1,6 @@
-README.txt file for nrelclass2013.
+README.txt file for nreltraining2013.
 
 To view the Sphinx documentation for this distribution, type:
 
-plugin docs nrelclass2013
+plugin docs nreltraining2013
 

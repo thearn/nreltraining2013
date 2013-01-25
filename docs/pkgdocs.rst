@@ -13,23 +13,23 @@ Package Metadata
 - **entry_points**:: 
 
     [openmdao.component]
-    nrelclass2013.nrelclass2013.AutoBEM=nrelclass2013.nrelclass2013:AutoBEM
-    nrelclass2013.nrelclass2013.BEMPerf=nrelclass2013.nrelclass2013:BEMPerf
-    nrelclass2013.nrelclass2013.BEM=nrelclass2013.nrelclass2013:BEM
-    nrelclass2013.nrelclass2013.ActuatorDisk=nrelclass2013.nrelclass2013:ActuatorDisk
-    nrelclass2013.nrelclass2013.BladeElement=nrelclass2013.nrelclass2013:BladeElement
+    nreltraining2013.nreltraining2013.BEMPerf=nreltraining2013.nreltraining2013:BEMPerf
+    nreltraining2013.nreltraining2013.ActuatorDisk=nreltraining2013.nreltraining2013:ActuatorDisk
+    nreltraining2013.nreltraining2013.BEM=nreltraining2013.nreltraining2013:BEM
+    nreltraining2013.nreltraining2013.BladeElement=nreltraining2013.nreltraining2013:BladeElement
+    nreltraining2013.nreltraining2013.AutoBEM=nreltraining2013.nreltraining2013:AutoBEM
     [openmdao.container]
-    nrelclass2013.nrelclass2013.AutoBEM=nrelclass2013.nrelclass2013:AutoBEM
-    nrelclass2013.nrelclass2013.FlowConditions=nrelclass2013.nrelclass2013:FlowConditions
-    nrelclass2013.nrelclass2013.BEMPerf=nrelclass2013.nrelclass2013:BEMPerf
-    nrelclass2013.nrelclass2013.BEMPerfData=nrelclass2013.nrelclass2013:BEMPerfData
-    nrelclass2013.nrelclass2013.BEM=nrelclass2013.nrelclass2013:BEM
-    nrelclass2013.nrelclass2013.ActuatorDisk=nrelclass2013.nrelclass2013:ActuatorDisk
-    nrelclass2013.nrelclass2013.BladeElement=nrelclass2013.nrelclass2013:BladeElement
+    nreltraining2013.nreltraining2013.BEMPerfData=nreltraining2013.nreltraining2013:BEMPerfData
+    nreltraining2013.nreltraining2013.BEMPerf=nreltraining2013.nreltraining2013:BEMPerf
+    nreltraining2013.nreltraining2013.ActuatorDisk=nreltraining2013.nreltraining2013:ActuatorDisk
+    nreltraining2013.nreltraining2013.FlowConditions=nreltraining2013.nreltraining2013:FlowConditions
+    nreltraining2013.nreltraining2013.BladeElement=nreltraining2013.nreltraining2013:BladeElement
+    nreltraining2013.nreltraining2013.AutoBEM=nreltraining2013.nreltraining2013:AutoBEM
+    nreltraining2013.nreltraining2013.BEM=nreltraining2013.nreltraining2013:BEM
 
 - **keywords:** openmdao
 
-- **name:** nrelclass2013
+- **name:** nreltraining2013
 
 - **requires-dist:** openmdao.main
 
