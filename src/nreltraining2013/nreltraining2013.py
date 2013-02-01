@@ -26,7 +26,7 @@ class ActuatorDisk(Component):
     Ct = Float(iotype="out", desc="Thrust Coefficient")
     thrust = Float(iotype="out", desc="Thrust produced by the rotor", units="N")
     Cp = Float(iotype="out", desc="Power Coefficient")
-    power = Float(iotype="out", desc="Power produced by the rotor", units="J")
+    power = Float(iotype="out", desc="Power produced by the rotor", units="W")
 
     def execute(self):
         #we use 'a' and 'V0' a lot, so make method local variables
@@ -34,16 +34,16 @@ class ActuatorDisk(Component):
         a = self.a
         Vu = self.Vu
 
-        q = .5*self.rho*self.Area*Vu**2
+        qA = .5*self.rho*self.Area*Vu**2
 
-        self.u1 = Vu*(1-2 * a)
-        self.u = .5*(self.Vu + self.Vd)
+        self.Vd = Vu*(1-2 * a)
+        self.Vr = .5*(self.Vu + self.Vd)
 
         self.Ct = 4*a*(1-a)
-        self.thrust = self.Ct*q
+        self.thrust = self.Ct*qA
 
         self.Cp = self.Ct*(1-a)
-        self.power = self.Cp*q*self.Area
+        self.power = self.Cp*qA*Vu
 
 
 class FlowConditions(VariableTree):     
