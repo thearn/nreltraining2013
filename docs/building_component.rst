@@ -66,24 +66,24 @@ actuator disk analysis as an OpenMDAO component:
         Ct = Float(iotype="out", desc="Thrust Coefficient")
         thrust = Float(iotype="out", desc="Thrust produced by the rotor", units="N")
         Cp = Float(iotype="out", desc="Power Coefficient")
-        power = Float(iotype="out", desc="Power produced by the rotor", units="J")
+        power = Float(iotype="out", desc="Power produced by the rotor", units="W")
 
         def execute(self):
-            #we use 'a' and 'V0' a lot, so make method-local variables
+            #we use 'a' and 'V0' a lot, so make method local variables
 
             a = self.a
             Vu = self.Vu
 
-            q = .5*self.rho*self.Area*Vu**2
+            qA = .5*self.rho*self.Area*Vu**2
 
-            self.u1 = Vu*(1-2 * a)
-            self.u = .5*(self.Vu + self.Vd)
+            self.Vd = Vu*(1-2 * a)
+            self.Vr = .5*(self.Vu + self.Vd)
 
             self.Ct = 4*a*(1-a)
-            self.thrust = self.Ct*q
+            self.thrust = self.Ct*qA
 
             self.Cp = self.Ct*(1-a)
-            self.power = self.Cp*q*self.Area
+            self.power = self.Cp*qA*Vu
 
 
 In Python, a class or function must be imported before it can be used. Most of what you need in OpenMDAO
@@ -155,7 +155,7 @@ by adding some definitions:
         Ct = Float(iotype="out", desc="Thrust Coefficient")
         thrust = Float(iotype="out", desc="Thrust produced by the rotor", units="N")
         Cp = Float(iotype="out", desc="Power Coefficient")
-        power = Float(iotype="out", desc="Power produced by the rotor", units="J")
+        power = Float(iotype="out", desc="Power produced by the rotor", units="W")
 
 .. index:: Traits
 
@@ -185,20 +185,21 @@ Finally, you need a function to execute this component:
 .. testcode:: simple_component_Paraboloid_pieces
 
     def execute(self):
-            #we use 'a' and 'V0' a lot, so make method-local variables
+            #we use 'a' and 'V0' a lot, so make method local variables
+
             a = self.a
             Vu = self.Vu
 
-            q = .5*self.rho*self.Area*Vu**2
+            qA = .5*self.rho*self.Area*Vu**2
 
-            self.u1 = Vu*(1-2 * a)
-            self.u = .5*(self.Vu + self.Vd)
+            self.Vd = Vu*(1-2 * a)
+            self.Vr = .5*(self.Vu + self.Vd)
 
             self.Ct = 4*a*(1-a)
-            self.thrust = self.Ct*q
+            self.thrust = self.Ct*qA
 
             self.Cp = self.Ct*(1-a)
-            self.power = self.Cp*q*self.Area
+            self.power = self.Cp*qA*Vu
         
 The ``execute`` function is where you define what a component does when it runs.
 The input and output variables are attributes of the ActuatorDisk class, which means that
