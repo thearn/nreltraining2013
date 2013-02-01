@@ -93,7 +93,7 @@ kwargs = {'author': '',
  'package_dir': {'': 'src'},
  'packages': ['nreltraining2013'],
  'url': '',
- 'version': '1.4',
+ 'version': '1.5',
  'zip_safe': False}
 
 
