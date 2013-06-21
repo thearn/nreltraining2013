@@ -40,5 +40,5 @@ Package Metadata
 
 - **static_path:** [ '_static' ]
 
-- **version:** 0.1
+- **version:** 1.5
 
