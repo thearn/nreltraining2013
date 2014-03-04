@@ -7,7 +7,7 @@ from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 
 from openmdao.main.api import Component, Assembly, VariableTree
-from openmdao.lib.datatypes.api import Float, Int, Array, Slot
+from openmdao.lib.datatypes.api import Float, Int, Array, VarTree
 from openmdao.lib.components.api import LinearDistribution
 
 
@@ -46,7 +46,7 @@ class ActuatorDisk(Component):
         self.power = self.Cp*qA*Vu
 
 
-class FlowConditions(VariableTree):     
+class FlowConditions(VariableTree):
     rho = Float(1.225, desc="air density", units="kg/m**3")
     V = Float(7., desc="free stream air velocity", units="m/s")
 
@@ -69,34 +69,34 @@ class BEMPerf(Component):
     r = Float(.8, iotype="in", desc="tip radius of the rotor", units="m")
     rpm = Float(2100, iotype="in", desc="rotations per minute", low=0, units="min**-1")
 
-    free_stream = Slot(FlowConditions, iotype="in") 
+    free_stream = VarTree(FlowConditions(), iotype="in")
 
-    data = Slot(BEMPerfData, iotype="out")
+    data = VarTree(BEMPerfData(), iotype="out")
 
     #this lets the size of the arrays vary for different numbers of elements
     def __init__(self, n=10):
         super(BEMPerf, self).__init__()
 
         #needed initialization for VTs
-        self.add('data', BEMPerfData())  
+        self.add('data', BEMPerfData())
         self.add('free_stream', FlowConditions())
 
         #array size based on number of elements
-        self.add('delta_Ct', Array(iotype='in', desc='thrusts from %d different blade elements'%n,
+        self.add('delta_Ct', Array(iotype='in', desc='thrusts from %d different blade elements' % n,
                                default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
-        self.add('delta_Cp', Array(iotype='in', desc='Cp integrant points from %d different blade elements'%n,
+        self.add('delta_Cp', Array(iotype='in', desc='Cp integrant points from %d different blade elements' % n,
                                default_value=np.ones((n,)), shape=(n,), dtype=Float))
-        self.add('lambda_r', Array(iotype='in', desc='lambda_r from %d different blade elements'%n,
-                               default_value=np.ones((n,)), shape=(n,), dtype=Float))      
-                                 
+        self.add('lambda_r', Array(iotype='in', desc='lambda_r from %d different blade elements' % n,
+                               default_value=np.ones((n,)), shape=(n,), dtype=Float))
+
     def execute(self):
-        self.data = BEMPerfData()  #emtpy the variable tree
+        self.data = BEMPerfData()  # empty the variable tree
 
         V_inf = self.free_stream.V
         rho = self.free_stream.rho
 
         norm = (.5*rho*(V_inf**2)*(pi*self.r**2))
-        self.data.Ct= np.trapz(self.delta_Ct, x=self.lambda_r)
+        self.data.Ct = np.trapz(self.delta_Ct, x=self.lambda_r)
         self.data.net_thrust = self.data.Ct*norm
 
         self.data.Cp = np.trapz(self.delta_Cp, x=self.lambda_r) * 8. / self.lambda_r.max()**2
@@ -123,9 +123,9 @@ class BEM(Assembly):
     B = Int(3, iotype="in", desc="number of blades", low=1)
 
     #wind condition inputs
-    free_stream = Slot(FlowConditions, iotype="in") 
+    free_stream = VarTree(FlowConditions(), iotype="in")
 
-    def __init__(self): 
+    def __init__(self):
         super(BEM, self).__init__()
         self.add('free_stream', FlowConditions())
 
@@ -137,11 +137,11 @@ class BEM(Assembly):
 
         self.connect('BE0.delta_Ct', 'perf.delta_Ct[0]')
         self.connect('BE0.delta_Cp', 'perf.delta_Cp[0]')
-        self.connect('BE0.lambda_r', 'perf.lambda_r[0]')   
+        self.connect('BE0.lambda_r', 'perf.lambda_r[0]')
 
         self.connect('BE1.delta_Ct', 'perf.delta_Ct[1]')
         self.connect('BE1.delta_Cp', 'perf.delta_Cp[1]')
-        self.connect('BE1.lambda_r', 'perf.lambda_r[1]')   
+        self.connect('BE1.lambda_r', 'perf.lambda_r[1]')
 
         self.connect('BE2.delta_Ct', 'perf.delta_Ct[2]')
         self.connect('BE2.delta_Cp', 'perf.delta_Cp[2]')
@@ -164,7 +164,7 @@ class AutoBEM(BEM):
 
     def configure(self):
 
-        self.add('free_stream', FlowConditions()) #initialize
+        self.add('free_stream', FlowConditions())  # initialize
 
         n_elements = self._n_elements
 
@@ -192,24 +192,24 @@ class AutoBEM(BEM):
 
         self._elements = []
         for i in range(n_elements):
-            name = 'BE%d'%i
+            name = 'BE%d' % i
             self._elements.append(name)
             self.add(name, BladeElement())
             self.driver.workflow.add(name)
-            self.connect('radius_dist.output[%d]'%i, name+'.r')
+            self.connect('radius_dist.output[%d]' % i, name+'.r')
             self.connect('radius_dist.delta', name+'.dr')
-            self.connect('twist_dist.output[%d]'%i, name+'.twist')
-            self.connect('chord_dist.output[%d]'%i, name+".chord")
+            self.connect('twist_dist.output[%d]' % i, name+'.twist')
+            self.connect('chord_dist.output[%d]' % i, name+".chord")
 
             self.connect('B', name+'.B')
             self.connect('rpm', name+'.rpm')
 
             self.connect('free_stream.rho', name+'.rho')
             self.connect('free_stream.V', name+'.V_inf')
-            self.connect(name+'.delta_Ct', 'perf.delta_Ct[%d]'%i)
+            self.connect(name+'.delta_Ct', 'perf.delta_Ct[%d]' % i)
 
-            self.connect(name+'.delta_Cp', 'perf.delta_Cp[%d]'%i)
-            self.connect(name+'.lambda_r', 'perf.lambda_r[%d]'%i)
+            self.connect(name+'.delta_Cp', 'perf.delta_Cp[%d]' % i)
+            self.connect(name+'.lambda_r', 'perf.lambda_r[%d]' % i)
 
         self.driver.workflow.add('perf')
 
@@ -244,7 +244,7 @@ class BladeElement(Component):
     lambda_r = Float(8, iotype="out", desc="local tip speed ratio")
     phi = Float(1.487, iotype="out", desc="relative flow angle onto blades", units="rad")
 
-    def __init__(self): 
+    def __init__(self):
         super(BladeElement, self).__init__()
 
         #rough linear interpolation from naca 0012 airfoil data
@@ -256,14 +256,14 @@ class BladeElement(Component):
 
     def _coeff_lookup(self, i):
         C_L = self.cl_interp(i)
-        C_D = self.cd_interp(i)    
+        C_D = self.cd_interp(i)
         return C_D, C_L
-        
-    def execute(self):    
-        self.sigma = self.B*self.chord / (2* np.pi * self.r)
+
+    def execute(self):
+        self.sigma = self.B*self.chord / (2 * np.pi * self.r)
         self.omega = self.rpm*2*pi/60.0
         omega_r = self.omega*self.r
-        self.lambda_r = self.omega*self.r/self.V_inf # need lambda_r for iterates
+        self.lambda_r = self.omega*self.r/self.V_inf  # need lambda_r for iterates
 
         result = fsolve(self._iteration, [self.a_init, self.b_init])
         self.a = result[0]
@@ -285,12 +285,12 @@ class BladeElement(Component):
         self.alpha = pi/2-self.twist-self.phi
         C_D, C_L = self._coeff_lookup(self.alpha)
         self.a = 1./(1 + 4.*(np.cos(self.phi)**2)/(self.sigma*C_L*np.sin(self.phi)))
-        self.b = (self.sigma*C_L) / (4* self.lambda_r * np.cos(self.phi)) * (1 - self.a)
+        self.b = (self.sigma*C_L) / (4 * self.lambda_r * np.cos(self.phi)) * (1 - self.a)
 
         return (X[0]-self.a), (X[1]-self.b)
 
 if __name__ == "__main__":
-    
+
     top = Assembly()
     top.add('b', AutoBEM())
     top.driver.workflow.add('b')
@@ -308,7 +308,7 @@ if __name__ == "__main__":
     print top.b.BE3.r, top.b.BE3.sigma, top.b.BE3.chord
     print top.b.BE4.r, top.b.BE4.sigma, top.b.BE4.chord
     print top.b.BE5.r, top.b.BE5.sigma, top.b.BE5.chord
-    
+
     from openmdao.lib.drivers.api import SLSQPdriver
     top.add('driver', SLSQPdriver())
     top.driver.add_parameter('b.chord_hub', low=.1, high=2)
@@ -320,9 +320,8 @@ if __name__ == "__main__":
 
     top.driver.add_objective('-b.data.Cp')
 
-
     top.run()
-    print 
+    print
     print
     print top.b.rpm
     print top.b.data.Cp
@@ -335,7 +334,3 @@ if __name__ == "__main__":
     print top.b.BE3.r, top.b.BE3.sigma, top.b.BE3.chord
     print top.b.BE4.r, top.b.BE4.sigma, top.b.BE4.chord
     print top.b.BE5.r, top.b.BE5.sigma, top.b.BE5.chord
-
-
-
-
