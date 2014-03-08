@@ -7,10 +7,9 @@ Using a DOE
 
 It was a good chunk of work to set up the full BEM model in OpenMDAO. You would not want to go
 through that every time. This plugin comes with a pre-configured assembly that has all the necessary
-connections and workflows already set up.  Start a new project again and filter the library on
-`nrel.` Add an instance of ``AutoBEM`` (with the default 6 elements) to the ``top`` assembly that
-is already there. We're going to treat this like any other component now and set up a DOE around
-it.
+connections and workflows already set up.  Start a new project again, add a top assembly and filter
+the library on `nrel.` Add an instance of ``AutoBEM`` (with the default 6 elements) to the ``top``
+assembly. We're going to treat this like any other component now and set up a DOE around it.
 
 Filter the Library on `doe driver.` You'll see two options pop up. The first one, ``DOEdriver``,
 will execute a specified DOE  on your model within the full specified variable ranges. The second
