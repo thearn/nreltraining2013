@@ -8,14 +8,14 @@ Setting up the Assembly
 
 Start a new OpenMDAO GUI project from the project screen. You can name it whatever you want, but
 we're going to  call it `Betz Limit`. Once the project opens up, create a ``top`` assembly as you
-did before. Then filter the library with `nrel,`and you should see all the classes for this tutorial.
-Add an instance of `actuator disk` from the library to the ``top`` assembly. We named our instance `ad`.
+did before. Then filter the library with `nrel` and you should see all the classes for this tutorial.
+Add an instance of ``ActuatorDisk`` from the library to the ``top`` assembly. We named our instance `ad`.
 
 Now you've added a component instance into the ``top`` Assembly. But you can't do much with it,
 except set the inputs  and run that component. To set up an optimization, you need to add a
 different driver. So filter the library with `opt` to see a list of optimizers. We're going to
 start with SLSQPdriver for this tutorial. Drag an instance of ``SLSQPdriver`` over to the ``top``
-Assembly and drop it on top of the ``RunOnce`` driver that's already there. The driver should become
+Assembly and drop it on top of the ``Run_Once`` driver that's already there. The driver should become
 highlighted in blue when you're hover over it. When you drop a component onto an existing
 component, you're  replacing that component rather than creating a new one.
 
@@ -51,7 +51,7 @@ wind, the best you can do is to extract about 60% of the power from the wind. Th
 an analysis of the equations used to build  our ActuatorDisk component. We'll try to use an
 optimizer to confirm that our component returns the correct value for Betz's limit.
 
-First, open the Parameters tab. Click on the ``add parameter`` button. A small dialog will open up
+First, open the Parameters tab. Click on the ``Add Parameter`` button. A small dialog will open up
 that lets you specify which parameter you want to give to the optimizer. If you hit the down arrow,
 you will get a list of all the available variables. Pick ``ad.a``. This is the  axial induction
 factor, or a ratio of the incoming wind velocity to the velocity after it exits the turbine. You'll
@@ -76,7 +76,7 @@ highlighted in blue. All variables with implicit connections will be shown in in
 .. figure:: connected_var_comp_editor.png
     :align: center
 
-We also need to specify an objective. Go to the driver's Objectives tab and click ``add objective``.
+We also need to specify an objective. Go to the driver's Objectives tab and click ``Add Objective``.
 Optimizers by default will  try to minimize the objective, so set the objective to ``-ad.Cp`` to get a
 maximization. You'll see a new feedback connector  show up in the dataflow when you do this. This
 indicates that the optimizer is now dependent on values from the component.
