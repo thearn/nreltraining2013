@@ -7,9 +7,9 @@ Setting up the Assembly
 -----------------------
 
 Start a new OpenMDAO GUI project from the project screen. You can name it whatever you want, but
-we're going to  call it `Betz Limit`. Once the project opens up, filter the library with `nrel,`
-and you should see all the classes for this tutorial. Add an instance of `actuator disk` from the
-library to the assembly called `top.` We named our instance `ad`.  
+we're going to  call it `Betz Limit`. Once the project opens up, create a ``top`` assembly as you
+did before. Then filter the library with `nrel,`and you should see all the classes for this tutorial.
+Add an instance of `actuator disk` from the library to the ``top`` assembly. We named our instance `ad`.
 
 Now you've added a component instance into the ``top`` Assembly. But you can't do much with it,
 except set the inputs  and run that component. To set up an optimization, you need to add a
@@ -17,7 +17,7 @@ different driver. So filter the library with `opt` to see a list of optimizers. 
 start with SLSQPdriver for this tutorial. Drag an instance of ``SLSQPdriver`` over to the ``top``
 Assembly and drop it on top of the ``RunOnce`` driver that's already there. The driver should become
 highlighted in blue when you're hover over it. When you drop a component onto an existing
-component, you're  replacing that component rather than creating a new one. 
+component, you're  replacing that component rather than creating a new one.
 
 .. _`relace_driver`:
 
@@ -30,11 +30,11 @@ Configure the Optimization
 ---------------------------
 
 Once you have the SLSQPdriver instance in there, you're ready to configure the optimization.
-Double-click on the driver to bring up its editor window. You should see a few tabs in that window: 
+Double-click on the driver to bring up its editor window. You should see a few tabs in that window:
 
 * Inputs
 * Parameters
-* Trigger 
+* Trigger
 * Outputs
 * Objectives
 * Workflow
@@ -60,18 +60,18 @@ These came from the variable metadata which specified a low and a high of 0 and 
 could shrink these ranges if you wished but not expand them. The 0 and 1 are hard limits set by the
 component and can't be violated. We'll leave them as is. You will also notice the optional
 `scaler` and `adder` fields. These are available for you to scale and shift your parameter if
-necessary to give a more stable optimization. Once you hit ``ok``, you should see the dataflow 
+necessary to give a more stable optimization. Once you hit ``ok``, you should see the dataflow
 diagram change a bit. The blue connector that showed up indicates that there is an implicit
 connection between the driver and the component.  The connection is implicit because the driver will
 set the value of ``ad.a`` during the optimization, but you can also change the value.  Whatever you
-set the value to will be used as the initial condition for the optimization. 
+set the value to will be used as the initial condition for the optimization.
 
 
 .. figure:: add_parameter.png
     :align: center
 
 If you double-click on an instance now, you will see that the `a` variable in the editor window is also
-highlighted in blue. All variables with implicit connections will be shown in in blue. 
+highlighted in blue. All variables with implicit connections will be shown in in blue.
 
 .. figure:: connected_var_comp_editor.png
     :align: center
@@ -79,7 +79,7 @@ highlighted in blue. All variables with implicit connections will be shown in in
 We also need to specify an objective. Go to the driver's Objectives tab and click ``add objective``.
 Optimizers by default will  try to minimize the objective, so set the objective to ``-ad.Cp`` to get a
 maximization. You'll see a new feedback connector  show up in the dataflow when you do this. This
-indicates that the optimizer is now dependent on values from the component. 
+indicates that the optimizer is now dependent on values from the component.
 
 .. figure:: feedback.png
     :align: center
@@ -98,7 +98,7 @@ The order of execution is determined by the  workflow. Although the dataflow doe
 workflow, it can constrain it. For example, if you have two components, `a` and `b`,  where `a` has an
 output connected to the input of `b`, then you must run `a` before `b`.  In most cases, the
 automatically created workflow will work just fine.  Just know that if you need to modify the workflow
-to add a sub-solver loop or introduce some metamodel training, the flexibility is there. 
+to add a sub-solver loop or introduce some metamodel training, the flexibility is there.
 
 
 Run the Optimization
@@ -108,5 +108,5 @@ So you're ready to run. Just right-click on the assembly ``top`` and pick ``run`
 This will cause the whole assembly to execute and will run your optimization for you. Double-click on
 the component when it's finished, and you will see that the optimizer found a value of  approximately
 1/3 for axial induction factor, yielding a power coefficient just under .6. Congratulations! You have
-just found Betz's limit. You can close down the project for now. 
+just found Betz's limit. You can close down the project for now.
 
