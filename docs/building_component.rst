@@ -74,7 +74,7 @@ actuator disk analysis as an OpenMDAO component:
         power = Float(iotype="out", desc="Power produced by the rotor", units="W")
 
         def execute(self):
-            #we use 'a' and 'V0' a lot, so make method local variables
+            # we use 'a' and 'V0' a lot, so make method local variables
 
             a = self.a
             Vu = self.Vu
