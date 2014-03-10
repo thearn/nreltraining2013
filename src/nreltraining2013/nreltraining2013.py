@@ -15,7 +15,7 @@ class ActuatorDisk(Component):
     """Simple wind turbine model based on actuator disk theory"""
 
     # inputs
-    a = Float(.5, iotype="in", desc="Induced Velocity Factor", low=0, high=1)
+    a = Float(.5, iotype="in", desc="Induced Velocity Factor")
     Area = Float(10, iotype="in", desc="Rotor disk area", units="m**2", low=0)
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
     Vu = Float(10, iotype="in", desc="Freestream air velocity, upstream of rotor", units="m/s")

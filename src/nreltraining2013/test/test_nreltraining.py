@@ -33,7 +33,6 @@ class ActuatorDiskTestCase(unittest.TestCase):
         self.top.replace('driver', SLSQPdriver())
         self.top.driver.add_parameter('ad.a', low=0, high=1)
         self.top.driver.add_objective('-ad.Cp')
-        self.top.driver.gradient_options.fd_form = 'backward'
 
         self.top.run()
 
