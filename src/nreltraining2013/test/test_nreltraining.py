@@ -35,7 +35,6 @@ class ActuatorDiskTestCase(unittest.TestCase):
         self.top.driver.add_objective('-ad.Cp')
         self.top.driver.gradient_options.fd_form = "backward"
 
-        #self.top.ad.a = .01
         self.top.run()
 
         assert_rel_error(self, self.top.ad.a, 0.333, 0.005)
@@ -93,3 +92,4 @@ class AutoBEMTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
