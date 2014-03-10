@@ -33,7 +33,9 @@ class ActuatorDiskTestCase(unittest.TestCase):
         self.top.replace('driver', SLSQPdriver())
         self.top.driver.add_parameter('ad.a', low=0, high=1)
         self.top.driver.add_objective('-ad.Cp')
+        self.top.driver.gradient_options.fd_form = "backward"
 
+        #self.top.ad.a = .01
         self.top.run()
 
         assert_rel_error(self, self.top.ad.a, 0.333, 0.005)
