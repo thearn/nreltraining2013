@@ -14,7 +14,7 @@ window. If you don't  see the text editor come up, check to make sure its launch
 a pop-up blocker. If it was blocked, you might need to add an exception for the GUI to your pop-up
 blocker. Once the text editor is open, you're ready to build your first OpenMDAO Component class.
 
-If you have some files on your computer that you want to use, you can upload them to the project in
+If you have some files on your computer that you want to use, you can add them to the project in
 a similar way. On the Files tab,  right-click to get to the context menu and select ``Add Files``.
 Choose the files you want to add from your computer, and they will be added to the project. Note that
 the files you add to a project are copied and stored in your project. If you make any changes to the
@@ -59,13 +59,13 @@ actuator disk analysis as an OpenMDAO component:
     class ActuatorDisk(Component):
         """Simple wind turbine model based on actuator disk theory"""
 
-        #inputs
-        a = Float(.5, iotype="in", desc="Induced Velocity Factor", low=0, high=1)
+        # inputs
+        a = Float(.5, iotype="in", desc="Induced Velocity Factor")
         Area = Float(10, iotype="in", desc="Rotor disk area", units="m**2", low=0)
         rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
         Vu = Float(10, iotype="in", desc="Freestream air velocity, upstream of rotor", units="m/s")
 
-        #outputs
+        # outputs
         Vr = Float(iotype="out", desc="Air velocity at rotor exit plane", units="m/s")
         Vd = Float(iotype="out", desc="Slipstream air velocity, downstream of rotor", units="m/s")
         Ct = Float(iotype="out", desc="Thrust Coefficient")
@@ -74,7 +74,7 @@ actuator disk analysis as an OpenMDAO component:
         power = Float(iotype="out", desc="Power produced by the rotor", units="W")
 
         def execute(self):
-            #we use 'a' and 'V0' a lot, so make method local variables
+            # we use 'a' and 'V0' a lot, so make method local variables
 
             a = self.a
             Vu = self.Vu
@@ -153,13 +153,13 @@ the class definition by adding some definitions:
     class ActuatorDisk(Component):
         """Simple wind turbine model based on actuator disk theory"""
 
-        #inputs
-        a = Float(.5, iotype="in", desc="Induced Velocity Factor", low=0, high=1)
+        # inputs
+        a = Float(.5, iotype="in", desc="Induced Velocity Factor")
         Area = Float(10, iotype="in", desc="Rotor disk area", units="m**2", low=0)
         rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
         Vu = Float(10, iotype="in", desc="Freestream air velocity, upstream of rotor", units="m/s")
 
-        #outputs
+        # outputs
         Vr = Float(iotype="out", desc="Air velocity at rotor exit plane", units="m/s")
         Vd = Float(iotype="out", desc="Slipstream air velocity, downstream of rotor", units="m/s")
         Ct = Float(iotype="out", desc="Thrust Coefficient")
@@ -195,7 +195,7 @@ Finally, you need a function to execute this component:
 .. testcode:: simple_component_Paraboloid_pieces
 
     def execute(self):
-            #we use 'a' and 'V0' a lot, so make method local variables
+            # we use 'a' and 'V0' a lot, so make method local variables
 
             a = self.a
             Vu = self.Vu

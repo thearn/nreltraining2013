@@ -50,7 +50,7 @@ the calculations are not trivial. However, there are a couple of key features to
     class BladeElement(Component):
         """Calculations for a single radial slice of a rotor blade"""
 
-        #inputs
+        # inputs
         a_init = Float(0.2, iotype="in", desc="initial guess for axial inflow factor")
         b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
         rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
@@ -63,7 +63,7 @@ the calculations are not trivial. However, there are a couple of key features to
         rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
         V_inf = Float(7, iotype="in", desc="free stream air velocity", units="m/s")
 
-        #outputs
+        # outputs
         V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
         V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
         V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
@@ -80,7 +80,7 @@ the calculations are not trivial. However, there are a couple of key features to
         def __init__(self):
             super(BladeElement, self).__init__()
 
-            #rough linear interpolation from naca 0012 airfoil data
+            # rough linear interpolation from naca 0012 airfoil data
             rad = np.array([0., 13., 15, 20, 30])*pi/180
             self.cl_interp = interp1d(rad, [0, 1.3, .8, .7, 1.1], fill_value=0.001, bounds_error=False)
 
@@ -185,15 +185,15 @@ that go along with it.
 
         data = VarTree(BEMPerfData(), iotype="out")
 
-        #this lets the size of the arrays vary for different numbers of elements
+        # this lets the size of the arrays vary for different numbers of elements
         def __init__(self, n=10):
             super(BEMPerf, self).__init__()
 
-            #needed initialization for VTs
+            # needed initialization for VTs
             self.add('data', BEMPerfData())
             self.add('free_stream', FlowConditions())
 
-            #array size based on number of elements
+            # array size based on number of elements
             self.add('delta_Ct', Array(iotype='in', desc='thrusts from %d different blade elements' % n,
                                    default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
             self.add('delta_Cp', Array(iotype='in', desc='Cp integrant points from %d different blade elements' % n,
@@ -252,7 +252,7 @@ there with the ``add`` method of the component.
 
 ::
 
-    #needed initialization for VTs
+    # needed initialization for VTs
     self.add('data', BEMPerfData())
     self.add('free_stream', FlowConditions())
 
@@ -287,8 +287,8 @@ have three BladeElements, so  create a ``BEMPerf`` instance named *perf* and set
 elements to 3 when prompted.
 
 Now you want to connect the BladeElement instances and the BEMPerfComponent. Click and drag from the
-small green circle on the right of *BE0* to small circle on the top of *perf*. This will bring up the connection
-dialog.
+small green circle on the right of *BE0* to small circle on the top of *perf*. This will bring up the
+connection window.
 
 .. figure:: connection.png
     :align: center
@@ -301,7 +301,7 @@ We want to connect three variables from *BE0* to *perf*:
 
 Just start typing each source and target name into the right and left input fields  respectively,
 and select the variable from the suggestions when you see it pop up. Then click ``Connect``. When
-each connection is made, it will get drawn in the dialog so you can see it.  When you're done, it
+each connection is made, it will get drawn in the window so you can see it.  When you're done, it
 will look like this:
 
 .. figure:: connection_dialog.png
@@ -321,7 +321,7 @@ sense to have  all three of them set to the same radius, twist, chord, etc. But 
 some  carefully picked values into each of them, just for the sake of argument. So now are you ready
 to run? Try it.
 
-Right-click on the ``top`` assembly and select ``run`` from the menu. The assembly and the driver will
+Right-click on the ``top`` assembly and select ``Run`` from the menu. The assembly and the driver will
 both turn  green, but none of the other components will. Why not? Well, take a look at the workflow.
 Even though you connected  all your components properly and (theoretically) set some good values into
 the inputs, you never added anything to the workflow.
@@ -365,7 +365,7 @@ So let's take a look at what the i/o for BEM analysis would look like:
     class BEM(Assembly):
         """Blade Rotor with 3 BladeElements"""
 
-        #physical properties inputs
+        # physical properties inputs
         r_hub = Float(0.2, iotype="in", desc="blade hub radius", units="m", low=0)
         twist_hub = Float(29, iotype="in", desc="twist angle at the hub radius", units="deg")
         chord_hub = Float(.7, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
@@ -376,7 +376,7 @@ So let's take a look at what the i/o for BEM analysis would look like:
         rpm = Float(107, iotype="in", desc="rotations per minute", low=0, units="min**-1")
         B = Int(3, iotype="in", desc="number of blades", low=1)
 
-        #wind condition inputs
+        # wind condition inputs
         free_stream = VarTree(FlowConditions(), iotype="in")
 
         def __init__(self):
@@ -429,7 +429,7 @@ You have an assembly with i/o and components connected and hooked up to a workfl
 still need to  connect the assembly i/o to the components it holds. There are two ways you can
 do that. The first way, assuming you have existing variables defined like the inputs we
 created, is to again use the connection editor. Right-click somewhere in the assembly and
-select ``Edit data connections`` from the menu. This will bring up the  connection window.
+select ``Edit Data Connections`` from the menu. This will bring up the  connection window.
 This time, leave the source as ``-- Assembly --`` but set the target to *BE0*. Now  you can
 connect the `rho` and `V` variables from the ``free_stream`` VariableTree and the `B`
 variable  to the corresponding variables in the BladeElement. Repeat that for `BE1,

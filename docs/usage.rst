@@ -20,7 +20,7 @@ The plugin and this tutorial have been updated for compatibility with OpenMDAO V
 Browser-Based GUI
 ========================
 
-The OpenMDAO Graphical User Interface (GUI) is written as a browser-based application. This means
+The OpenMDAO Graphical User Interface (GUI) is a browser-based application. This means
 that the entire GUI is written with HTML5 and Javascript. We call it a browser-based application
 and not a "web app" because unlike a web app, the OpenMDAO GUI does not require an active Internet
 connection and does not transmit any information across the network. Regardless, the GUI functions
@@ -31,7 +31,7 @@ your work.
 Opening the GUI
 ==================
 
-OpenMDAO ships with a GUI. As mentioned, it is written in Javascript and HTML, and even though
+OpenMDAO ships with the GUI. As mentioned, it is written in Javascript and HTML, and even though
 our GUI is rendered in a web browser, you don't need to be connected to the Internet to use it.
 Since the GUI is built in, once you've installed OpenMDAO, you can just open up a command window,
 `activate <http://openmdao.org/docs/getting-started/install.html>`_ your OpenMDAO environment, and
@@ -101,7 +101,7 @@ whatever you like.
 You will notice that your new assembly already contains one Component named 'driver'. The name
 `driver` is significant to assemblies. When you tell an assembly to run, it always looks for
 `driver` to start the process. The default driver type is 'Run_Once', which just performs
-a single execution of each of it's components.
+a single execution of each of the components in its workflow (more on that later).
 
 
 With the GUI open and your top level assembly created, you are now ready to start building a model.

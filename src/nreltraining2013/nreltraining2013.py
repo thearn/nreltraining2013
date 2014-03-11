@@ -14,13 +14,13 @@ from openmdao.lib.components.api import LinearDistribution
 class ActuatorDisk(Component):
     """Simple wind turbine model based on actuator disk theory"""
 
-    #inputs
-    a = Float(.5, iotype="in", desc="Induced Velocity Factor", low=0, high=1)
+    # inputs
+    a = Float(.5, iotype="in", desc="Induced Velocity Factor")
     Area = Float(10, iotype="in", desc="Rotor disk area", units="m**2", low=0)
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
     Vu = Float(10, iotype="in", desc="Freestream air velocity, upstream of rotor", units="m/s")
 
-    #outputs
+    # outputs
     Vr = Float(iotype="out", desc="Air velocity at rotor exit plane", units="m/s")
     Vd = Float(iotype="out", desc="Slipstream air velocity, dowstream of rotor", units="m/s")
     Ct = Float(iotype="out", desc="Thrust Coefficient")
@@ -29,7 +29,7 @@ class ActuatorDisk(Component):
     power = Float(iotype="out", desc="Power produced by the rotor", units="W")
 
     def execute(self):
-        #we use 'a' and 'V0' a lot, so make method local variables
+        # we use 'a' and 'V0' a lot, so make method local variables
 
         a = self.a
         Vu = self.Vu
@@ -73,15 +73,15 @@ class BEMPerf(Component):
 
     data = VarTree(BEMPerfData(), iotype="out")
 
-    #this lets the size of the arrays vary for different numbers of elements
+    # this lets the size of the arrays vary for different numbers of elements
     def __init__(self, n=10):
         super(BEMPerf, self).__init__()
 
-        #needed initialization for VTs
+        # needed initialization for VTs
         self.add('data', BEMPerfData())
         self.add('free_stream', FlowConditions())
 
-        #array size based on number of elements
+        # array size based on number of elements
         self.add('delta_Ct', Array(iotype='in', desc='thrusts from %d different blade elements' % n,
                                default_value=np.ones((n,)), shape=(n,), dtype=Float, units="N"))
         self.add('delta_Cp', Array(iotype='in', desc='Cp integrant points from %d different blade elements' % n,
@@ -111,7 +111,7 @@ class BEMPerf(Component):
 class BEM(Assembly):
     """Blade Rotor with 3 BladeElements"""
 
-    #physical properties inputs
+    # physical properties inputs
     r_hub = Float(0.2, iotype="in", desc="blade hub radius", units="m", low=0)
     twist_hub = Float(29, iotype="in", desc="twist angle at the hub radius", units="deg")
     chord_hub = Float(.7, iotype="in", desc="chord length at the rotor hub", units="m", low=.05)
@@ -122,7 +122,7 @@ class BEM(Assembly):
     rpm = Float(107, iotype="in", desc="rotations per minute", low=0, units="min**-1")
     B = Int(3, iotype="in", desc="number of blades", low=1)
 
-    #wind condition inputs
+    # wind condition inputs
     free_stream = VarTree(FlowConditions(), iotype="in")
 
     def __init__(self):
@@ -218,7 +218,7 @@ class AutoBEM(BEM):
 class BladeElement(Component):
     """Calculations for a single radial slice of a rotor blade"""
 
-    #inputs
+    # inputs
     a_init = Float(0.2, iotype="in", desc="initial guess for axial inflow factor")
     b_init = Float(0.01, iotype="in", desc="initial guess for angular inflow factor")
     rpm = Float(106.952, iotype="in", desc="rotations per minute", low=0, units="min**-1")
@@ -231,7 +231,7 @@ class BladeElement(Component):
     rho = Float(1.225, iotype="in", desc="air density", units="kg/m**3")
     V_inf = Float(7, iotype="in", desc="free stream air velocity", units="m/s")
 
-    #outputs
+    # outputs
     V_0 = Float(iotype="out", desc="axial flow at propeller disk", units="m/s")
     V_1 = Float(iotype="out", desc="local flow velocity", units="m/s")
     V_2 = Float(iotype="out", desc="angular flow at propeller disk", units="m/s")
@@ -248,7 +248,7 @@ class BladeElement(Component):
     def __init__(self):
         super(BladeElement, self).__init__()
 
-        #rough linear interpolation from naca 0012 airfoil data
+        # rough linear interpolation from naca 0012 airfoil data
         rad = np.array([0., 13., 15, 20, 30])*pi/180
         self.cl_interp = interp1d(rad, [0, 1.3, .8, .7, 1.1], fill_value=0.001, bounds_error=False)
 
@@ -335,3 +335,4 @@ if __name__ == "__main__":
     print top.b.BE3.r, top.b.BE3.sigma, top.b.BE3.chord
     print top.b.BE4.r, top.b.BE4.sigma, top.b.BE4.chord
     print top.b.BE5.r, top.b.BE5.sigma, top.b.BE5.chord
+

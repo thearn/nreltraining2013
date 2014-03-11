@@ -60,7 +60,7 @@ These came from the variable metadata which specified a low and a high of 0 and 
 could shrink these ranges if you wished but not expand them. The 0 and 1 are hard limits set by the
 component and can't be violated. We'll leave them as is. You will also notice the optional
 `scaler` and `adder` fields. These are available for you to scale and shift your parameter if
-necessary to give a more stable optimization. Once you hit ``ok``, you should see the dataflow
+necessary to give a more stable optimization. Once you hit ``Ok``, you should see the dataflow
 diagram change a bit. The blue connector that showed up indicates that there is an implicit
 connection between the driver and the component.  The connection is implicit because the driver will
 set the value of ``ad.a`` during the optimization, but you can also change the value.  Whatever you
@@ -104,7 +104,7 @@ to add a sub-solver loop or introduce some metamodel training, the flexibility i
 Run the Optimization
 ---------------------------
 
-So you're ready to run. Just right-click on the assembly ``top`` and pick ``run`` from the context menu.
+So you're ready to run. Just right-click on the assembly ``top`` and pick ``Run`` from the context menu.
 This will cause the whole assembly to execute and will run your optimization for you. Double-click on
 the component when it's finished, and you will see that the optimizer found a value of  approximately
 1/3 for axial induction factor, yielding a power coefficient just under .6. Congratulations! You have
