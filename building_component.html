@@ -1,0 +1,393 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Building a Component - Actuator Disk &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="Unconstrained Optimization for Betz Limit" href="basic_optimization.html" />
+    <link rel="prev" title="Getting Started" href="usage.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="basic_optimization.html" title="Unconstrained Optimization for Betz Limit"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Getting Started"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="building-a-component-actuator-disk">
+<h1>Building a Component - Actuator Disk<a class="headerlink" href="#building-a-component-actuator-disk" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="adding-files-to-your-gui-project">
+<h2>Adding Files to your GUI Project<a class="headerlink" href="#adding-files-to-your-gui-project" title="Permalink to this headline">¶</a></h2>
+<p>So the first thing we will do is create a new file in which to put some code to define our new
+actuator disk component.  Click on the Files tab and then right-click to open a context menu. Select
+<tt class="docutils literal"><span class="pre">New</span> <span class="pre">File</span></tt> from the context menu, and finally, enter a name for the new  file. Let&#8217;s call it
+<tt class="docutils literal"><span class="pre">actuator_disk.py</span></tt>. (Note that the file extension is important, so make sure you add the <tt class="docutils literal"><span class="pre">.py</span></tt>.)
+Now double-click in the newly created file in the Files tree to open the GUI text editor in a new
+window. If you don&#8217;t  see the text editor come up, check to make sure its launch was not blocked by
+a pop-up blocker. If it was blocked, you might need to add an exception for the GUI to your pop-up
+blocker. Once the text editor is open, you&#8217;re ready to build your first OpenMDAO Component class.</p>
+<p>If you have some files on your computer that you want to use, you can add them to the project in
+a similar way. On the Files tab,  right-click to get to the context menu and select <tt class="docutils literal"><span class="pre">Add</span> <span class="pre">Files</span></tt>.
+Choose the files you want to add from your computer, and they will be added to the project. Note that
+the files you add to a project are copied and stored in your project. If you make any changes to the
+original local files, those changes will not be reflected in the GUI project. You can modify your
+project files within the GUI by using the text editor, or you can re-add them if you make changes
+outside the GUI.</p>
+</div>
+<div class="section" id="defining-a-component">
+<h2>Defining a Component<a class="headerlink" href="#defining-a-component" title="Permalink to this headline">¶</a></h2>
+<p>In this part of the tutorial, we&#8217;re going to define a component that uses
+actuator disk theory to provide a very simple model of a wind turbine. With
+actuator disk theory, we will reproduce a very well-known engineering design
+limitation called the Betz limit.</p>
+<div class="figure align-center">
+<img alt="_images/actuator_disk.png" src="_images/actuator_disk.png" />
+<p class="caption">Actuator disk</p>
+</div>
+<p>With actuator disk theory, you treat the entire rotor as a single disk that
+extracts velocity uniformly from the incoming flow and converts it to
+power. If you define the upstream, rotor, and downstream velocities as
+<span class="math">\(V_u\)</span>, <span class="math">\(V_r\)</span>, <span class="math">\(V_d\)</span> respectively, then you can describe the
+axial induction factor, <span class="math">\(a\)</span>, as the amount of velocity extracted from the
+flow. <span class="math">\(a = \frac{V_u-V_r}{V_r}\)</span></p>
+<p>A component takes a set of inputs and operates on them to produce a set of
+outputs. In the OpenMDAO framework, a class called <em>Component</em>
+provides this behavior. Any Component has inputs and outputs and
+contains a function called <em>execute</em> that calculates the outputs based on the
+values of the inputs. Let&#8217;s take a look at how you would implement the
+actuator disk analysis as an OpenMDAO component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span>
+
+
+<span class="k">class</span> <span class="nc">ActuatorDisk</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple wind turbine model based on actuator disk theory&quot;&quot;&quot;</span>
+
+    <span class="c"># inputs</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Induced Velocity Factor&quot;</span><span class="p">)</span>
+    <span class="n">Area</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Rotor disk area&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m**2&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air density&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/m**3&quot;</span><span class="p">)</span>
+    <span class="n">Vu</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Freestream air velocity, upstream of rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+
+    <span class="c"># outputs</span>
+    <span class="n">Vr</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Air velocity at rotor exit plane&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">Vd</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Slipstream air velocity, downstream of rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">Ct</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Thrust Coefficient&quot;</span><span class="p">)</span>
+    <span class="n">thrust</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Thrust produced by the rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;N&quot;</span><span class="p">)</span>
+    <span class="n">Cp</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Power Coefficient&quot;</span><span class="p">)</span>
+    <span class="n">power</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Power produced by the rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;W&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># we use &#39;a&#39; and &#39;V0&#39; a lot, so make method local variables</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+        <span class="n">Vu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vu</span>
+
+        <span class="n">qA</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Area</span><span class="o">*</span><span class="n">Vu</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Vd</span> <span class="o">=</span> <span class="n">Vu</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Vr</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Vu</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vd</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ct</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thrust</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ct</span><span class="o">*</span><span class="n">qA</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ct</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cp</span><span class="o">*</span><span class="n">qA</span><span class="o">*</span><span class="n">Vu</span>
+</pre></div>
+</div>
+<p>In Python, a class or function must be imported before it can be used. Most of what you need in
+OpenMDAO can be imported from <tt class="docutils literal"><span class="pre">openmdao.main.api</span></tt> and the <tt class="docutils literal"><span class="pre">openmdao.lib</span></tt> api modules:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.caseiterators.api</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.caserecorders.api</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.components.api</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.datatypes.api</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.doegenerators.api</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.drivers.api</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">openmdao.lib.surrogatemodels.api</span></tt></li>
+</ul>
+<p>The first two lines in the <tt class="docutils literal"><span class="pre">actuator_disk.py</span></tt> module import the definitions
+of the Component class and the Float class. Component is the base class
+that you inherit from to build the ActuatorDisk class. Since all the inputs
+for this model are floats, you need only the Float variable type for this work.
+A full complement of other variable types is available in openmdao. You can see
+the details on the others <a class="reference external" href="http://openmdao.org/docs/basics/variables.html">here</a>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span>
+</pre></div>
+</div>
+<p>You could import many other objects from <tt class="docutils literal"><span class="pre">openmdao.main.api</span></tt> and <tt class="docutils literal"><span class="pre">openmdao.lib.datatypes.api</span></tt>,
+but to keep things neater, you should import only the classes that you need for your particular
+component. In other words:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># BAD</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="c"># INCONVENIENT</span>
+<span class="kn">import</span> <span class="nn">openmdao.main.api</span>
+
+<span class="c"># GOOD</span>
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span>
+</pre></div>
+</div>
+<p>The next line defines a class called <cite>ActuatorDisk</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ActuatorDisk</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple wind turbine model based on actuator disk theory&quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<p id="index-0">You define the ActuatorDisk class by deriving it from the Component class. All of your analyses will
+derive from the Component class, and typically you need to provide just two functions &#8211; one to
+initialize anything that needs to be set up once and another one to execute the component
+(calculate the outputs from the inputs.)</p>
+<p>Right now, your ActuatorDisk class is defined but has no inputs, no  outputs, and an <tt class="docutils literal"><span class="pre">execute</span></tt>
+function that does nothing. So the next thing you need to do is define the inputs and outputs in
+the class definition by adding some definitions:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ActuatorDisk</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Simple wind turbine model based on actuator disk theory&quot;&quot;&quot;</span>
+
+    <span class="c"># inputs</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Induced Velocity Factor&quot;</span><span class="p">)</span>
+    <span class="n">Area</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Rotor disk area&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m**2&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air density&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/m**3&quot;</span><span class="p">)</span>
+    <span class="n">Vu</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Freestream air velocity, upstream of rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+
+    <span class="c"># outputs</span>
+    <span class="n">Vr</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Air velocity at rotor exit plane&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">Vd</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Slipstream air velocity, downstream of rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">Ct</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Thrust Coefficient&quot;</span><span class="p">)</span>
+    <span class="n">thrust</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Thrust produced by the rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;N&quot;</span><span class="p">)</span>
+    <span class="n">Cp</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Power Coefficient&quot;</span><span class="p">)</span>
+    <span class="n">power</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Power produced by the rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;W&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p id="index-1">In Python, all objects have <em>attributes</em>, but making all of those attributes
+visible to the framework would be overwhelming, so OpenMDAO requires you to
+declare what we call <em>Variables</em> to indicate the specific inputs and outputs
+that you want your component to make available to other components. Variables
+are usually declared in the class definition of a component.</p>
+<p>In the above example, all of your inputs and outputs are floating point numbers, so
+you will use a type of variable called <em>Float</em>. The Float constructor contains
+a default value and some arguments.</p>
+<p>The argument <em>iotype</em> declares this variable as an input or an output. This
+argument is required. If it is omitted (or misspelled), then the variable
+won&#8217;t be visible in the framework.</p>
+<p>The optional argument <em>desc</em> contains a description, or a string of text that describes this
+variable. This argument, while not required, is encouraged.</p>
+<p>The optional argument <em>units</em> specifies (if applicable) the physical units the value should have.
+If given, OpenMDAO will perform automated unit checking and, if possible, conversion, when a
+variable with units is connected to another variable.</p>
+<p>Finally, you need a function to execute this component:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c"># we use &#39;a&#39; and &#39;V0&#39; a lot, so make method local variables</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span>
+        <span class="n">Vu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vu</span>
+
+        <span class="n">qA</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">Area</span><span class="o">*</span><span class="n">Vu</span><span class="o">**</span><span class="mi">2</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Vd</span> <span class="o">=</span> <span class="n">Vu</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Vr</span> <span class="o">=</span> <span class="o">.</span><span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Vu</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">Vd</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Ct</span> <span class="o">=</span> <span class="mi">4</span><span class="o">*</span><span class="n">a</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thrust</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ct</span><span class="o">*</span><span class="n">qA</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">Cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ct</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cp</span><span class="o">*</span><span class="n">qA</span><span class="o">*</span><span class="n">Vu</span>
+</pre></div>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">execute</span></tt> function is where you define what a component does when it runs.
+The input and output variables are attributes of the ActuatorDisk class, which means that
+they must be accessed using <em>self</em>. For example, <tt class="docutils literal"><span class="pre">self.a</span></tt> gives you the value
+stored in <tt class="docutils literal"><span class="pre">a</span></tt>. This <tt class="docutils literal"><span class="pre">self.</span></tt> can be cumbersome if you use it a lot, so you might
+find it convenient to create a couple of function-local variables as shortcuts.
+We do this with <cite>a</cite> and <cite>Vu</cite>.</p>
+<p>Often, you will already have the code for evaluating your component outputs, but it will be in
+some other language, such as Fortran or C/C++. The <a class="reference external" href="http://openmdao.org/docs/plugin-guide/index.html">Plugin-Developer-Guide</a>  gives some examples of how to incorporate
+these kinds of components into OpenMDAO.</p>
+<p>With these changes made to your class, you may now close the text editor window, which saves your
+file, and go back to the main GUI screen. On the right-hand side of the window is the Library tab,
+which you used earlier to create your top-level Assembly. You can use the Library tab to navigate
+the list of all available classes in your current working environment. The library will include
+everything from the OpenMDAO standard library, everything from any plugins you have installed,
+and everything from the files in your current project.  In this case, the file we&#8217;ve created has
+defined the ActuatorDisk component, so once you finish editing the file, it should become available
+in your Library.</p>
+</div>
+<div class="section" id="working-with-the-library">
+<h2>Working with the Library<a class="headerlink" href="#working-with-the-library" title="Permalink to this headline">¶</a></h2>
+<p>Since there are a lot of choices in the OpenMDAO library, you can filter down the options easily
+using the text field at the top of the library. You can search by class name, component type, or
+component metadata. Try searching for <cite>optimizer.</cite> You should see the list of optimizers from
+the OpenMDAO standard library:</p>
+<ul class="simple">
+<li>COBYLAdriver</li>
+<li>CONMINdriver</li>
+<li>Genetic</li>
+<li>NEWSUMTdriver</li>
+<li>SLSQPdriver</li>
+</ul>
+<p>To find your newly defined <tt class="docutils literal"><span class="pre">ActuatorDisk</span></tt> component, filter with <cite>actuator.</cite> You should see
+two results:</p>
+<ul class="simple">
+<li>actuator_disk.ActuatorDisk</li>
+<li>nreltraining2013.ActuatorDisk</li>
+</ul>
+<p>There are two results for this search because a class named <tt class="docutils literal"><span class="pre">ActuatorDisk</span></tt> is defined in two
+separate  files. You defined it in your newly created project file, and it has also been
+pre-defined for you as  part of this plugin.</p>
+<p>Lastly, try searching for <cite>nrel.</cite> This will bring up a list of all the classes defined in this
+plugin. They all show up because <cite>nrel</cite> appears in their file name:</p>
+<ul class="simple">
+<li>BEM</li>
+<li>BEMPerf</li>
+<li>BEMPerfData</li>
+<li>BladeElement</li>
+<li>nreltraining2013.ActuatorDisk</li>
+<li>SmallBEM</li>
+</ul>
+</div>
+<div class="section" id="running-your-component">
+<h2>Running your Component<a class="headerlink" href="#running-your-component" title="Permalink to this headline">¶</a></h2>
+<p>So, now you&#8217;ve defined your class and found our reference implementation from the plugin. Let&#8217;s
+create  an instance of each one and make sure they give the same results. First, click and drag
+<tt class="docutils literal"><span class="pre">actuator_disk.ActuatorDisk</span></tt> from the library and drop it into the <tt class="docutils literal"><span class="pre">top</span></tt> assembly in the
+dataflow tab. The assembly should become highlighted in blue when you&#8217;re dropping it in the right
+place. OpenMDAO will ask you  to give an instance name; we went with <tt class="docutils literal"><span class="pre">my_ad</span></tt>. Also, use the same
+process to create an instance of the plugin version of ActuatorDisk and call it  <tt class="docutils literal"><span class="pre">plugin_ad</span></tt>.</p>
+<div class="figure align-center" id="create-actuatordisk">
+<img alt="_images/create_actuatordisk.png" src="_images/create_actuatordisk.png" />
+<p class="caption">Creating the ActuatorDisk instance in the Dataflow</p>
+</div>
+<p>Double-clicking on either of the newly created ActuatorDisk instances opens their respective
+component editor windows.  From the component editor, you can see all the information about this
+component (e.g., its inputs and outputs).  You&#8217;ll notice that the inputs are the same for both
+instances since they are at default values. If you check the outputs, you&#8217;ll see that they are
+all 0. The components are outlined in red right now, because they have not been run and their
+outputs are not yet valid. To run the components, right-click on each one and select <tt class="docutils literal"><span class="pre">run</span></tt>
+from its context menu.  The component outline should change to green, indicating that it is now
+valid. If you look at the outputs, you should see  that Cp is .5 for both instances. You can
+change any input value you want. Try changing the value for <cite>a</cite> to something  else. When you
+change it, the outline should go back to red, since the outputs are no longer valid for the new
+inputs.</p>
+<div class="figure align-center">
+<img alt="_images/my_ad_outputs.png" src="_images/my_ad_outputs.png" />
+<p class="caption">ActuatorDisk outputs</p>
+</div>
+</div>
+<div class="section" id="finishing-up">
+<h2>Finishing Up<a class="headerlink" href="#finishing-up" title="Permalink to this headline">¶</a></h2>
+<p>Thats it! You&#8217;ve built your first OpenMDAO Component and used it in the GUI. To close down the
+project just go to the <tt class="docutils literal"><span class="pre">Project</span></tt> menu and  select <tt class="docutils literal"><span class="pre">Close</span></tt>. This should take you back out to
+the projects screen.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Building a Component - Actuator Disk</a><ul>
+<li><a class="reference internal" href="#adding-files-to-your-gui-project">Adding Files to your GUI Project</a></li>
+<li><a class="reference internal" href="#defining-a-component">Defining a Component</a></li>
+<li><a class="reference internal" href="#working-with-the-library">Working with the Library</a></li>
+<li><a class="reference internal" href="#running-your-component">Running your Component</a></li>
+<li><a class="reference internal" href="#finishing-up">Finishing Up</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="usage.html"
+                        title="previous chapter">Getting Started</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="basic_optimization.html"
+                        title="next chapter">Unconstrained Optimization for Betz Limit</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/building_component.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="basic_optimization.html" title="Unconstrained Optimization for Betz Limit"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Getting Started"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

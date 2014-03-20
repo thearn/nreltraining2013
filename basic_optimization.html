@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Unconstrained Optimization for Betz Limit &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="Recording Data from your Runs" href="recording_data.html" />
+    <link rel="prev" title="Building a Component - Actuator Disk" href="building_component.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="recording_data.html" title="Recording Data from your Runs"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="building_component.html" title="Building a Component - Actuator Disk"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="unconstrained-optimization-for-betz-limit">
+<span id="uncon-opt"></span><h1>Unconstrained Optimization for Betz Limit<a class="headerlink" href="#unconstrained-optimization-for-betz-limit" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="setting-up-the-assembly">
+<h2>Setting up the Assembly<a class="headerlink" href="#setting-up-the-assembly" title="Permalink to this headline">¶</a></h2>
+<p>Start a new OpenMDAO GUI project from the project screen. You can name it whatever you want, but
+we&#8217;re going to  call it <cite>Betz Limit</cite>. Once the project opens up, create a <tt class="docutils literal"><span class="pre">top</span></tt> assembly as you
+did before. Then filter the library with <cite>nrel</cite> and you should see all the classes for this tutorial.
+Add an instance of <tt class="docutils literal"><span class="pre">ActuatorDisk</span></tt> from the library to the <tt class="docutils literal"><span class="pre">top</span></tt> assembly. We named our instance <cite>ad</cite>.</p>
+<p>Now you&#8217;ve added a component instance into the <tt class="docutils literal"><span class="pre">top</span></tt> Assembly. But you can&#8217;t do much with it,
+except set the inputs  and run that component. To set up an optimization, you need to add a
+different driver. So filter the library with <cite>opt</cite> to see a list of optimizers. We&#8217;re going to
+start with SLSQPdriver for this tutorial. Drag an instance of <tt class="docutils literal"><span class="pre">SLSQPdriver</span></tt> over to the <tt class="docutils literal"><span class="pre">top</span></tt>
+Assembly and drop it on top of the <tt class="docutils literal"><span class="pre">Run_Once</span></tt> driver that&#8217;s already there. The driver should become
+highlighted in blue when you&#8217;re hover over it. When you drop a component onto an existing
+component, you&#8217;re  replacing that component rather than creating a new one.</p>
+<div class="figure align-center" id="relace-driver">
+<img alt="_images/replace_driver.png" src="_images/replace_driver.png" />
+<p class="caption">Replacing something by dropping on top of it</p>
+</div>
+</div>
+<div class="section" id="configure-the-optimization">
+<h2>Configure the Optimization<a class="headerlink" href="#configure-the-optimization" title="Permalink to this headline">¶</a></h2>
+<p>Once you have the SLSQPdriver instance in there, you&#8217;re ready to configure the optimization.
+Double-click on the driver to bring up its editor window. You should see a few tabs in that window:</p>
+<ul class="simple">
+<li>Inputs</li>
+<li>Parameters</li>
+<li>Trigger</li>
+<li>Outputs</li>
+<li>Objectives</li>
+<li>Workflow</li>
+<li>Slots</li>
+<li>Constraints</li>
+</ul>
+<p>The Inputs and Outputs tabs contain variables that are specific to the driver. These could be for
+settings specific to the  optimizer or for framework variables like execution count. To set up the
+optimization we&#8217;ll first look at the Parameters and Objectives tabs.</p>
+<p>We&#8217;re going to set up an optimization to look for Betz&#8217;s limit. This is a well-known result that
+states that for a wind turbine, as you try  to extract more and more velocity from the incoming
+wind, the best you can do is to extract about 60% of the power from the wind. This result comes from
+an analysis of the equations used to build  our ActuatorDisk component. We&#8217;ll try to use an
+optimizer to confirm that our component returns the correct value for Betz&#8217;s limit.</p>
+<p>First, open the Parameters tab. Click on the <tt class="docutils literal"><span class="pre">Add</span> <span class="pre">Parameter</span></tt> button. A small dialog will open up
+that lets you specify which parameter you want to give to the optimizer. If you hit the down arrow,
+you will get a list of all the available variables. Pick <tt class="docutils literal"><span class="pre">ad.a</span></tt>. This is the  axial induction
+factor, or a ratio of the incoming wind velocity to the velocity after it exits the turbine. You&#8217;ll
+notice that when you picked that variable, the low and high values were automatically filled in for you.
+These came from the variable metadata which specified a low and a high of 0 and 1 respectively. You
+could shrink these ranges if you wished but not expand them. The 0 and 1 are hard limits set by the
+component and can&#8217;t be violated. We&#8217;ll leave them as is. You will also notice the optional
+<cite>scaler</cite> and <cite>adder</cite> fields. These are available for you to scale and shift your parameter if
+necessary to give a more stable optimization. Once you hit <tt class="docutils literal"><span class="pre">Ok</span></tt>, you should see the dataflow
+diagram change a bit. The blue connector that showed up indicates that there is an implicit
+connection between the driver and the component.  The connection is implicit because the driver will
+set the value of <tt class="docutils literal"><span class="pre">ad.a</span></tt> during the optimization, but you can also change the value.  Whatever you
+set the value to will be used as the initial condition for the optimization.</p>
+<div class="figure align-center">
+<img alt="_images/add_parameter.png" src="_images/add_parameter.png" />
+</div>
+<p>If you double-click on an instance now, you will see that the <cite>a</cite> variable in the editor window is also
+highlighted in blue. All variables with implicit connections will be shown in in blue.</p>
+<div class="figure align-center">
+<img alt="_images/connected_var_comp_editor.png" src="_images/connected_var_comp_editor.png" />
+</div>
+<p>We also need to specify an objective. Go to the driver&#8217;s Objectives tab and click <tt class="docutils literal"><span class="pre">Add</span> <span class="pre">Objective</span></tt>.
+Optimizers by default will  try to minimize the objective, so set the objective to <tt class="docutils literal"><span class="pre">-ad.Cp</span></tt> to get a
+maximization. You&#8217;ll see a new feedback connector  show up in the dataflow when you do this. This
+indicates that the optimizer is now dependent on values from the component.</p>
+<div class="figure align-center">
+<img alt="_images/feedback.png" src="_images/feedback.png" />
+</div>
+</div>
+<div class="section" id="the-workflow">
+<h2>The Workflow<a class="headerlink" href="#the-workflow" title="Permalink to this headline">¶</a></h2>
+<p>You might have noticed that when you added the first parameter to the optimizer, the workflow changed.
+OpenMDAO figured out that since  the optimizer was varying a value in the <cite>ad</cite> component, it would
+need to be in the workflow for that driver. So it added <cite>ad</cite> to the  workflow for you. It&#8217;s important
+to remember that OpenMDAO distinguished between the dataflow and the workflow. The dataflow describes
+which  components communicate with others, but it says nothing about when that communication happens.
+The order of execution is determined by the  workflow. Although the dataflow does not define the
+workflow, it can constrain it. For example, if you have two components, <cite>a</cite> and <cite>b</cite>,  where <cite>a</cite> has an
+output connected to the input of <cite>b</cite>, then you must run <cite>a</cite> before <cite>b</cite>.  In most cases, the
+automatically created workflow will work just fine.  Just know that if you need to modify the workflow
+to add a sub-solver loop or introduce some metamodel training, the flexibility is there.</p>
+</div>
+<div class="section" id="run-the-optimization">
+<h2>Run the Optimization<a class="headerlink" href="#run-the-optimization" title="Permalink to this headline">¶</a></h2>
+<p>So you&#8217;re ready to run. Just right-click on the assembly <tt class="docutils literal"><span class="pre">top</span></tt> and pick <tt class="docutils literal"><span class="pre">Run</span></tt> from the context menu.
+This will cause the whole assembly to execute and will run your optimization for you. Double-click on
+the component when it&#8217;s finished, and you will see that the optimizer found a value of  approximately
+1/3 for axial induction factor, yielding a power coefficient just under .6. Congratulations! You have
+just found Betz&#8217;s limit. You can close down the project for now.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Unconstrained Optimization for Betz Limit</a><ul>
+<li><a class="reference internal" href="#setting-up-the-assembly">Setting up the Assembly</a></li>
+<li><a class="reference internal" href="#configure-the-optimization">Configure the Optimization</a></li>
+<li><a class="reference internal" href="#the-workflow">The Workflow</a></li>
+<li><a class="reference internal" href="#run-the-optimization">Run the Optimization</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="building_component.html"
+                        title="previous chapter">Building a Component - Actuator Disk</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="recording_data.html"
+                        title="next chapter">Recording Data from your Runs</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/basic_optimization.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="recording_data.html" title="Recording Data from your Runs"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="building_component.html" title="Building a Component - Actuator Disk"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

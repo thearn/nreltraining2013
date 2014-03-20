@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Design a Wind Turbine &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="Source Documentation" href="srcdocs.html" />
+    <link rel="prev" title="More Complex Wind Turbine Model - BEM Theory" href="bem.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="srcdocs.html" title="Source Documentation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bem.html" title="More Complex Wind Turbine Model - BEM Theory"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="design-a-wind-turbine">
+<h1>Design a Wind Turbine<a class="headerlink" href="#design-a-wind-turbine" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="using-a-doe">
+<h2>Using a DOE<a class="headerlink" href="#using-a-doe" title="Permalink to this headline">¶</a></h2>
+<p>It was a good chunk of work to set up the full BEM model in OpenMDAO. You would not want to go
+through that every time. This plugin comes with a pre-configured assembly that has all the necessary
+connections and workflows already set up.  Start a new project again, add a top assembly and filter
+the library on <cite>nrel.</cite> Add an instance of <tt class="docutils literal"><span class="pre">AutoBEM</span></tt> (with the default 6 elements) to the <tt class="docutils literal"><span class="pre">top</span></tt>
+assembly. We&#8217;re going to treat this like any other component now and set up a DOE around it.</p>
+<p>Filter the Library on <cite>doe driver.</cite> You&#8217;ll see two options pop up. The first one, <tt class="docutils literal"><span class="pre">DOEdriver</span></tt>,
+will execute a specified DOE  on your model within the full specified variable ranges. The second
+one, <tt class="docutils literal"><span class="pre">NeighborhoodDOEdriver</span></tt>, will also run a DOE on your model,  but it does it in a small
+neighborhood around the initial design point. The regular <tt class="docutils literal"><span class="pre">DOEdriver</span></tt> is the most traditional and
+will be what you usually use. The <tt class="docutils literal"><span class="pre">NeighborhoodDOEdriver</span></tt> is more specialized but is very useful
+for setting up complex  optimization algorithms like BLISS-2000 or trust-region-based surrogate
+models.</p>
+<p>We&#8217;ll use the traditional DOEdriver for this work. Drag <tt class="docutils literal"><span class="pre">DOEdriver</span></tt> over and drop it on top of
+<tt class="docutils literal"><span class="pre">driver</span></tt> in <tt class="docutils literal"><span class="pre">top</span></tt> to replace it.  Now double-click on the new driver to see its editor window.
+Like an optimizer, <tt class="docutils literal"><span class="pre">DOEdriver</span></tt> allows you to add parameters.  These parameters are how you tell
+the driver what it can vary. Unlike an optimizer though, there is no objective tab, because a DOE
+does not  have an explicit objective. Switch over to the <em>Slots</em> tab. The <tt class="docutils literal"><span class="pre">DOEdriver</span></tt> has several
+new slots that we&#8217;ve not seen before.  We&#8217;re going to use the <tt class="docutils literal"><span class="pre">DOEgenerator</span></tt> slot here, but you
+can read about the <tt class="docutils literal"><span class="pre">case_filter</span></tt> and get plenty of other  details in our <a class="reference external" href="http://openmdao.org/docs/tutorials/optimization/doe.html">docs</a>.</p>
+<div class="figure align-center">
+<img alt="_images/doe_slots.png" src="_images/doe_slots.png" />
+</div>
+<p>Use <cite>doegenerator</cite> to filter the library. The list of five default DOEgenerator types will show up:</p>
+<ul class="simple">
+<li><strong>CentralComposite:</strong> Central composite DOE</li>
+<li><strong>CSVFile:</strong> A DOE from csv file with specific format</li>
+<li><strong>FullFactorial:</strong> Full factorial DOE with <span class="math">\(l^n\)</span> cases where <span class="math">\(l\)</span> is the number of levels and <span class="math">\(n\)</span> is the number of parameters.</li>
+<li><strong>OptLatinHypercube:</strong> Latin Hybercube DOE with Morris-Mitchell sampling criterion optimized</li>
+<li><strong>Uniform:</strong> DOE with <span class="math">\(n\)</span> cases chosen from a uniform distribution</li>
+</ul>
+<p>Let&#8217;s use FullFactorial with 3 levels. We have 5 design variables, which gives us <span class="math">\(3^5=243\)</span>
+cases. Drag <tt class="docutils literal"><span class="pre">FullFactorial</span></tt> from the library  and drop it on top of the <tt class="docutils literal"><span class="pre">DOEgenerator</span> <span class="pre">slot</span></tt>. When
+prompted, enter 3 for the number of levels. Also, add a <tt class="docutils literal"><span class="pre">CSVCaseRecorder</span></tt> so  we can look at the
+results.  All of the default settings for the CSVCaserecorder will work fine. Now switch over to the
+Parameters tab and add the 5 parameters from the BEM model.</p>
+<div class="figure align-center">
+<img alt="_images/doe_params.png" src="_images/doe_params.png" />
+</div>
+<p>Before we run, we want to add a couple of extra variables to be recorded into our CSV file. By
+default all of the DOE inputs will be recorded, but none of the outputs will be. On the Inputs
+tab, there is a variable called <tt class="docutils literal"><span class="pre">case_outputs</span></tt>. We can give that a list of all the variables it
+should include in each row of the CSV file. Note that you have to give a list of strings with the
+variable names. The quotations (single or double) are important.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;bem.perf.data.tip_speed_ratio&#39;</span><span class="p">,</span><span class="s">&#39;bem.perf.data.Cp&#39;</span><span class="p">,</span><span class="s">&#39;bem.perf.data.Ct&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Now, run the assembly. It will take a minute to finish since it&#8217;s running so many cases. When it
+finishes, click on the Files tab.  A few new files have shown up. The first one is <tt class="docutils literal"><span class="pre">cases.csv</span></tt>,
+and a second one is the timestamped archive version of the same file.  Lastly, you see the
+<tt class="docutils literal"><span class="pre">driver.csv</span></tt> file. This last file is output by DOEdriver and serves as a record of which cases
+were run, in normalized  DOE form. You can take this file and give it directly to a CSVFile
+DOEgenerator to re-run the exact same cases. For something like FullFactorial,  this is not really
+needed, but for OptLatinHyperCube or Uniform, you need this in order to run the same cases
+repeatedly (after you generated the first random DOE).</p>
+</div>
+<div class="section" id="changing-from-a-doe-to-an-optimization">
+<h2>Changing from a DOE to an Optimization<a class="headerlink" href="#changing-from-a-doe-to-an-optimization" title="Permalink to this headline">¶</a></h2>
+<p>If you scan through the data in the CSV file, you can see that even with 243 tries, a DOE was not
+very effective at finding  designs with high power coefficients. So let&#8217;s replace the DOEdriver with
+an optimizer. Filter the Library with <cite>optimizer</cite> and drag <tt class="docutils literal"><span class="pre">SLSQPdriver</span></tt> and drop it on top of
+<tt class="docutils literal"><span class="pre">driver</span></tt> to replace it. Notice that the implicit data dependency connector is still there  after
+you replace driver with an optimizer. If you double-click on <tt class="docutils literal"><span class="pre">driver</span></tt> and check the Parameters tab,
+you&#8217;ll see that all the parameters you had before were preserved.</p>
+<p>So now, add <tt class="docutils literal"><span class="pre">-bem.data.Cp</span></tt> as an objective. Before we run the model, let&#8217;s reload it to get back to a
+decent initial condition. You could manually set the values back yourself, but reloading works too. The
+issue is that the DOEdriver leaves the model in the same state as the last case it ran. You really  want a
+clean initial starting point, so just reload the model. You&#8217;ll see that the driver replacement and the
+objective will still be there. Or, you can  manually reset the starting point with these values:</p>
+<ul class="simple">
+<li>chord_hub: .7</li>
+<li>chord_tip: 0.187</li>
+<li>rpm: 107</li>
+<li>twist_hub: 29</li>
+<li>twist_tip: -3.58</li>
+</ul>
+<p>Now run the optimization and you&#8217;ll see a pretty decent design show up, with a Cp of .56. That&#8217;s not
+too shabby considering Betz limit is around .59.</p>
+</div>
+</div>
+<div class="section" id="conclusion">
+<h1>Conclusion<a class="headerlink" href="#conclusion" title="Permalink to this headline">¶</a></h1>
+<p>That concludes the tutorial for working with OpenMDAO. We&#8217;ve walked through simple and more complex
+wind turbine models and have seen many of the features that OpenMDAO supports. We&#8217;ve built Python
+components and linked them together into more complex models.  We&#8217;ve set up optimizations and DOE
+analyses on top of those models.</p>
+<p>Although we&#8217;ve seen many features of OpenMDAO, there are still plenty of other capabilities to check out. Our
+documentation includes tutorials on  working with different kinds of code wrappers, so you can interface your
+analyses with OpenMDAO. There are examples of wrapping  <a class="reference external" href="http://openmdao.org/docs/plugin-guide/extension_plugin.html#creating-an-extension-with-f2py">C and Fortran with F2PY</a>  and integrating
+<a class="reference external" href="http://openmdao.org/docs/plugin-guide/extension_plugin.html#creating-an-extension-with-swig">C or C++ with SWIG</a>.  If you are
+file wrapping codes, there are tools to help with that. There are tools for both standard  <a class="reference external" href="http://openmdao.org/docs/plugin-guide/filewrapper_plugin.html">file wrapping</a> and for  <a class="reference external" href="http://openmdao.org/docs/plugin-guide/filewrapper_plugin.html#generating-the-input-file-fortran-namelists">Fortran namelist inputs</a>.
+We also have tutorials for working with other common MDAO techniques, such as <a class="reference external" href="http://openmdao.org/docs/tutorials/surrogate/index.html">MetaModeling</a> and <a class="reference external" href="http://openmdao.org/docs/tutorials/mdao/index.html">Optimization architectures</a>. And even these do not exhaust all the capabilities.</p>
+<p>If you&#8217;re interested in contributing to the OpenMDAO project, there are plenty of options. We&#8217;re an open
+source project, and we welcome code contributions from the community. We also have a plugin system in
+OpenMDAO that allows you to produce plugins for just about anything within the framework. We&#8217;ve already had
+a few plugin contributions from the community. We host our plugins on a GitHub project called
+<a class="reference external" href="http://github.com/openmdao-plugins">OpenMDAO-Plugins</a>. If you have any questions, our <a class="reference external" href="http://openmdao.org/forum">forums</a> should be your first stop. The forums are actively monitored by the OpenMDAO
+development team, and you&#8217;ll get an answer very quickly from there!</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Design a Wind Turbine</a><ul>
+<li><a class="reference internal" href="#using-a-doe">Using a DOE</a></li>
+<li><a class="reference internal" href="#changing-from-a-doe-to-an-optimization">Changing from a DOE to an Optimization</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#conclusion">Conclusion</a></li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bem.html"
+                        title="previous chapter">More Complex Wind Turbine Model - BEM Theory</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="srcdocs.html"
+                        title="next chapter">Source Documentation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bem_design.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="srcdocs.html" title="Source Documentation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bem.html" title="More Complex Wind Turbine Model - BEM Theory"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

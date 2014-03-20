@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Getting Started &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="Building a Component - Actuator Disk" href="building_component.html" />
+    <link rel="prev" title="nreltraining2013 Documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="building_component.html" title="Building a Component - Actuator Disk"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="nreltraining2013 Documentation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>This plugin contains the documentation and component definitions for the OpenMDAO instructional
+class that was given at the 2013 National Renewable Energy Laboratory (NREL) Wind Energy Systems
+Engineering workshop. The class was given by Justin Gray and Christopher Heath of the NASA Glenn
+Research Center. Justin and Chris are members of the OpenMDAO development team and built the
+content of this class to demonstrate the basic usage of OpenMDAO with its GUI on some simple wind
+turbine design problems. The class covers:</p>
+<ul class="simple">
+<li>Basic usage for creating basic components</li>
+<li>Instantiating those components in the GUI to build simple models</li>
+<li>Building optimizations around models, working with design of experiments</li>
+<li>Recording data from your runs</li>
+<li>Building more complex models</li>
+</ul>
+<p>The plugin and this tutorial have been updated for compatibility with OpenMDAO Version 0.9.6.</p>
+<div class="section" id="browser-based-gui">
+<h2>Browser-Based GUI<a class="headerlink" href="#browser-based-gui" title="Permalink to this headline">¶</a></h2>
+<p>The OpenMDAO Graphical User Interface (GUI) is a browser-based application. This means
+that the entire GUI is written with HTML5 and Javascript. We call it a browser-based application
+and not a &#8220;web app&#8221; because unlike a web app, the OpenMDAO GUI does not require an active Internet
+connection and does not transmit any information across the network. Regardless, the GUI functions
+just like a web app in that you interact with it solely through a browser. Also, like many web apps,
+the OpenMDAO GUI automatically saves your model as you build it. You never need to manually save
+your work.</p>
+</div>
+<div class="section" id="opening-the-gui">
+<h2>Opening the GUI<a class="headerlink" href="#opening-the-gui" title="Permalink to this headline">¶</a></h2>
+<p>OpenMDAO ships with the GUI. As mentioned, it is written in Javascript and HTML, and even though
+our GUI is rendered in a web browser, you don&#8217;t need to be connected to the Internet to use it.
+Since the GUI is built in, once you&#8217;ve installed OpenMDAO, you can just open up a command window,
+<a class="reference external" href="http://openmdao.org/docs/getting-started/install.html">activate</a> your OpenMDAO environment, and
+then type:</p>
+<div class="highlight-python"><div class="highlight"><pre>openmdao gui
+</pre></div>
+</div>
+<p>Two things should happen next. First, you should see a couple of lines of output to the console that
+look similar to the following:</p>
+<div class="highlight-python"><div class="highlight"><pre>Opening URL in browser: http://localhost:59499 (pid=74061)
+Opened in open
+&lt;&lt;&lt;74061&gt;&gt;&gt; OMG -- Serving on port 59499
+</pre></div>
+</div>
+<p>The port number after <tt class="docutils literal"><span class="pre">http://localhost:</span></tt> and the process id after <tt class="docutils literal"><span class="pre">pid=</span></tt> will be different
+every time you open the GUI, so don&#8217;t worry that your numbers don&#8217;t match the ones we show here.</p>
+<p>Second, the Chrome browser (You did install a recent version of Chrome, right?) will launch to a
+page that lists all of the OpenMDAO projects that the GUI knows about. If this is your first time
+using the GUI, even if you&#8217;ve been  using OpenMDAO for a while now, there won&#8217;t be any projects in
+the list yet. You have to create new GUI projects for any existing models.</p>
+</div>
+<div class="section" id="gui-basics">
+<h2>GUI Basics<a class="headerlink" href="#gui-basics" title="Permalink to this headline">¶</a></h2>
+<p>Start by creating a new project in the OpenMDAO GUI. If you&#8217;ve never used the OpenMDAO GUI before,
+you&#8217;ll be greeted by an empty projects page like this:</p>
+<div class="figure align-center" id="empty-project-page">
+<img alt="_images/empty_project_page.png" src="_images/empty_project_page.png" />
+<p class="caption">Initial projects page for the GUI</p>
+</div>
+<p>Start by creating a new project. We&#8217;ll name it <tt class="docutils literal"><span class="pre">actuator_disk</span></tt>. You don&#8217;t have to specify any
+description or  version information if you don&#8217;t want to. Only the <cite>Project Name</cite> field is required.</p>
+<div class="figure align-center">
+<img alt="_images/new_project_modal.png" src="_images/new_project_modal.png" />
+<p class="caption">New project creation dialog</p>
+</div>
+<p>When you first open any new project, you&#8217;ll see an empty setup.</p>
+<div class="figure align-center">
+<img alt="_images/init_project_view.png" src="_images/init_project_view.png" />
+<p class="caption">Initial OpenMDAO project view</p>
+</div>
+<p>The first thing you will want to do is create an assembly to contain the components that
+will define your problem. You do this by dragging &#8216;Assembly&#8217; from the Library panel on the
+right (it should be near the top of the alphabetical list) and dropping it into the dataflow
+grid area.  You will be prompted to give the assembly a name. It is common to name this first
+assembly &#8216;top&#8217;, indicating that is the root of your model&#8217;s hierarchy, but you can name it
+whatever you like.</p>
+<div class="figure align-center">
+<img alt="_images/project_top_view.png" src="_images/project_top_view.png" />
+<p class="caption">Top Assembly</p>
+</div>
+<p>You will notice that your new assembly already contains one Component named &#8216;driver&#8217;. The name
+<cite>driver</cite> is significant to assemblies. When you tell an assembly to run, it always looks for
+<cite>driver</cite> to start the process. The default driver type is &#8216;Run_Once&#8217;, which just performs
+a single execution of each of the components in its workflow (more on that later).</p>
+<p>With the GUI open and your top level assembly created, you are now ready to start building a model.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#browser-based-gui">Browser-Based GUI</a></li>
+<li><a class="reference internal" href="#opening-the-gui">Opening the GUI</a></li>
+<li><a class="reference internal" href="#gui-basics">GUI Basics</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">nreltraining2013 Documentation</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="building_component.html"
+                        title="next chapter">Building a Component - Actuator Disk</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/usage.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="building_component.html" title="Building a Component - Actuator Disk"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="nreltraining2013 Documentation"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

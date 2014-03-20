@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Recording Data from your Runs &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="More Complex Wind Turbine Model - BEM Theory" href="bem.html" />
+    <link rel="prev" title="Unconstrained Optimization for Betz Limit" href="basic_optimization.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bem.html" title="More Complex Wind Turbine Model - BEM Theory"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="basic_optimization.html" title="Unconstrained Optimization for Betz Limit"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="recording-data-from-your-runs">
+<h1>Recording Data from your Runs<a class="headerlink" href="#recording-data-from-your-runs" title="Permalink to this headline">¶</a></h1>
+<p>Running an optimization in OpenMDAO is great, but it&#8217;s not really useful unless you can record the
+results.  In OpenMDAO, data recording is done through a special type of object called a
+<cite>CaseRecorder.</cite> OpenMDAO comes  with a number of different kinds of CaseRecorders built into the
+standard library, but you could also design your own if you have special needs.</p>
+<p>From <tt class="docutils literal"><span class="pre">openmdao.lib.casehandlers.api</span></tt> you can get:</p>
+<ul class="simple">
+<li><strong>DumpCaseRecorder:</strong> Dumps all case data to stdout</li>
+<li><strong>CSVCaseRecorder:</strong> Saves all case data to csv file</li>
+<li><strong>DBCaseRecorder:</strong> Saves all case data to a SQLite database</li>
+<li><strong>ListCaseRecorder:</strong> Saves all case data in memory to a Python list</li>
+</ul>
+<div class="section" id="drivers-and-caserecorders">
+<h2>Drivers and CaseRecorders<a class="headerlink" href="#drivers-and-caserecorders" title="Permalink to this headline">¶</a></h2>
+<p>CaseRecorder objects are used by drivers to record the information from your runs. In OpenMDAO, a
+case  is the relevant data from any single run of a driver through its workflow. So in our actuator
+disk example,  a case represents one iteration of the optimizer.</p>
+<p>Drivers have a slot, called <cite>recorders</cite>, which can accept any number of CaseRecorder objects. For
+every iteration, each recorder in the slot will get handed the case to save in its own
+way. This gives you the freedom to  save your case data in multiple ways simultaneously.</p>
+</div>
+<div class="section" id="trying-it-out">
+<h2>Trying it out<a class="headerlink" href="#trying-it-out" title="Permalink to this headline">¶</a></h2>
+<p>If you open up the Betz Limit project from the <a class="reference internal" href="basic_optimization.html#uncon-opt"><em>previous tutorial</em></a>, double-click
+on <tt class="docutils literal"><span class="pre">driver</span></tt>,  and then select the <tt class="docutils literal"><span class="pre">Slots</span></tt> tab, you can see the empty <tt class="docutils literal"><span class="pre">recorders</span></tt> slot. To add a
+recorder, first filter the Library by <cite>record</cite> and drag the <tt class="docutils literal"><span class="pre">DumpCaseRecorder</span></tt> into the empty
+slot. Just accept all the default settings that pop up in  the dialog.</p>
+<div class="figure align-center">
+<img alt="_images/dump_recorder_slot.png" src="_images/dump_recorder_slot.png" />
+</div>
+<p>When you drop that in, notice that a new empty space  opens up to the right of your
+<tt class="docutils literal"><span class="pre">DumpCaseRecorder</span></tt>. This is where you could put another recorder if you wanted to. Let&#8217;s drop  a
+<tt class="docutils literal"><span class="pre">CSVCaseRecorder</span></tt> in there. Just accept all the default settings in the dialog that pops up here as
+well. Now right-click on the assembly and select <tt class="docutils literal"><span class="pre">run</span></tt> from the menu.</p>
+<p>The first thing you&#8217;ll notice is a bunch of text streaming through the console window at the bottom
+of the screen that looks  something like this:</p>
+<div class="highlight-python"><div class="highlight"><pre>Case: 1
+   uuid: 424ee13d-627c-11e2-bdac-a82066196c38
+   inputs:
+      ad.a: 0.5
+   outputs:
+      Objective: -0.5
+</pre></div>
+</div>
+<p>That is the output from the dump case recorder. If you want to see the csv file you recorded, just
+take a look at the Files  tab. You will see two files have shown up there. One is called
+<tt class="docutils literal"><span class="pre">cases.csv</span></tt> and the other will have a name like <tt class="docutils literal"><span class="pre">cases_2013-01-19_16-10-17.csv</span></tt>.  These two
+files will be identical. What happens is that the CSVCaseRecorder archives all its case
+files with an additional date-time stamp in the name as it creates them. The most recent one will
+be <tt class="docutils literal"><span class="pre">cases.csv</span></tt> (or whatever name you told it to use), and all the older ones will still be
+accessible from the date-time stamped files.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Recording Data from your Runs</a><ul>
+<li><a class="reference internal" href="#drivers-and-caserecorders">Drivers and CaseRecorders</a></li>
+<li><a class="reference internal" href="#trying-it-out">Trying it out</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="basic_optimization.html"
+                        title="previous chapter">Unconstrained Optimization for Betz Limit</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bem.html"
+                        title="next chapter">More Complex Wind Turbine Model - BEM Theory</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/recording_data.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bem.html" title="More Complex Wind Turbine Model - BEM Theory"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="basic_optimization.html" title="Unconstrained Optimization for Betz Limit"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

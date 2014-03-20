@@ -1,3 +1,0 @@
-graft src/nreltraining2013/sphinx_build/html
-recursive-include src/nreltraining2013/test *.py
-

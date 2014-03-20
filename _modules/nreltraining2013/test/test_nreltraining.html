@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>nreltraining2013.test.test_nreltraining &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">nreltraining2013 1.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for nreltraining2013.test.test_nreltraining</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">unittest</span>
+
+
+<span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Assembly</span><span class="p">,</span> <span class="n">set_as_top</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.drivers.slsqpdriver</span> <span class="kn">import</span> <span class="n">SLSQPdriver</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.drivers.doedriver</span> <span class="kn">import</span> <span class="n">DOEdriver</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.doegenerators.api</span> <span class="kn">import</span> <span class="n">FullFactorial</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.casehandlers.api</span> <span class="kn">import</span> <span class="n">ListCaseRecorder</span>
+
+<span class="kn">from</span> <span class="nn">openmdao.util.testutil</span> <span class="kn">import</span> <span class="n">assert_rel_error</span>
+
+<span class="kn">from</span> <span class="nn">nreltraining2013.nreltraining2013</span> <span class="kn">import</span> <span class="o">*</span>
+
+
+<span class="k">class</span> <span class="nc">ActuatorDiskTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span>
+<div class="viewcode-block" id="ActuatorDiskTestCase"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase">[docs]</a>
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ActuatorDiskTestCase.setUp"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.setUp">[docs]</a>        <span class="bp">self</span><span class="o">.</span><span class="n">top</span> <span class="o">=</span> <span class="n">set_as_top</span><span class="p">(</span><span class="n">Assembly</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;ad&#39;</span><span class="p">,</span> <span class="n">ActuatorDisk</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;ad&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="ActuatorDiskTestCase.tearDown"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.tearDown">[docs]</a>        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">test_ActuatorDisk</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="ActuatorDiskTestCase.test_ActuatorDisk"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.test_ActuatorDisk">[docs]</a>        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ad.Cp&#39;</span><span class="p">),</span> <span class="mf">0.</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&#39;ad.Cp&#39;</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;driver&#39;</span><span class="p">,</span> <span class="n">SLSQPdriver</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;ad.a&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="s">&#39;-ad.Cp&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">ad</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="mf">0.333</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)</span>
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">ad</span><span class="o">.</span><span class="n">Cp</span><span class="p">,</span> <span class="mf">0.593</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)</span>  <span class="c"># Betz Limit</span>
+
+
+<span class="k">class</span> <span class="nc">AutoBEMTestCase</span><span class="p">(</span><span class="n">unittest</span><span class="o">.</span><span class="n">TestCase</span><span class="p">):</span></div></div>
+<div class="viewcode-block" id="AutoBEMTestCase"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.AutoBEMTestCase">[docs]</a>
+    <span class="k">def</span> <span class="nf">setUp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="AutoBEMTestCase.setUp"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.setUp">[docs]</a>        <span class="bp">self</span><span class="o">.</span><span class="n">top</span> <span class="o">=</span> <span class="n">set_as_top</span><span class="p">(</span><span class="n">Assembly</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;b&#39;</span><span class="p">,</span> <span class="n">AutoBEM</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;b&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">tearDown</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="AutoBEMTestCase.tearDown"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.tearDown">[docs]</a>        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">test_AutoBEM_DOE</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="AutoBEMTestCase.test_AutoBEM_DOE"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.test_AutoBEM_DOE">[docs]</a>        <span class="c"># perform a DOE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;driver&#39;</span><span class="p">,</span> <span class="n">DOEdriver</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">DOEgenerator</span> <span class="o">=</span> <span class="n">FullFactorial</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">recorders</span> <span class="o">=</span> <span class="p">[</span><span class="n">ListCaseRecorder</span><span class="p">()]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">case_outputs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s">&#39;b.perf.data.tip_speed_ratio&#39;</span><span class="p">,</span>
+            <span class="s">&#39;b.perf.data.Cp&#39;</span><span class="p">,</span>
+            <span class="s">&#39;b.perf.data.Ct&#39;</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.chord_hub&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.chord_tip&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.rpm&#39;</span><span class="p">,</span>       <span class="n">low</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.twist_hub&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.twist_tip&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">assertEqual</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">recorders</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="mi">243</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_AutoBEM_Opt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span></div>
+<div class="viewcode-block" id="AutoBEMTestCase.test_AutoBEM_Opt"><a class="viewcode-back" href="../../../srcdocs.html#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.test_AutoBEM_Opt">[docs]</a>        <span class="c"># perform optimization</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;driver&#39;</span><span class="p">,</span> <span class="n">SLSQPdriver</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.chord_hub&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.chord_tip&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.rpm&#39;</span><span class="p">,</span>       <span class="n">low</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.twist_hub&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_parameter</span><span class="p">(</span><span class="s">&#39;b.twist_tip&#39;</span><span class="p">,</span> <span class="n">low</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+        <span class="c"># self.top.driver.add_parameter(&#39;b.r_tip&#39;,     low=1, high=10)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">add_objective</span><span class="p">(</span><span class="s">&#39;-b.data.Cp&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="n">assert_rel_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="o">.</span><span class="n">b</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Cp</span><span class="p">,</span> <span class="mf">0.57</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">&#39;__main__&#39;</span><span class="p">:</span></div></div>
+    <span class="n">unittest</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../../index.html">nreltraining2013 1.5 documentation</a> &raquo;</li>
+          <li><a href="../../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

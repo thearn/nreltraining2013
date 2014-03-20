@@ -1,0 +1,738 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Source Documentation &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="Package Metadata" href="pkgdocs.html" />
+    <link rel="prev" title="Design a Wind Turbine" href="bem_design.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pkgdocs.html" title="Package Metadata"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="bem_design.html" title="Design a Wind Turbine"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="source-documentation">
+<span id="nreltraining2013-src-label"></span><h1>Source Documentation<a class="headerlink" href="#source-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-nreltraining2013.nreltraining2013">
+<span id="nreltraining2013-py"></span><span id="nreltraining2013-nreltraining2013-py"></span><span id="index-0"></span><h2>nreltraining2013.py<a class="headerlink" href="#module-nreltraining2013.nreltraining2013" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="nreltraining2013.nreltraining2013.ActuatorDisk">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.nreltraining2013.</tt><tt class="descname">ActuatorDisk</tt><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#ActuatorDisk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.ActuatorDisk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">openmdao.main.component.Component</span></tt></p>
+<p>Simple wind turbine model based on actuator disk theory</p>
+<dl class="docutils">
+<dt><em>Float</em> <strong>Area</strong></dt>
+<dd><p class="first">Rotor disk area</p>
+<ul class="last simple">
+<li>default:  &#8216;10.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m**2&#8217;</li>
+<li>low:  0.0</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>Vu</strong></dt>
+<dd><p class="first">Freestream air velocity, upstream of rotor</p>
+<ul class="last simple">
+<li>default:  &#8216;10.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>a</strong></dt>
+<dd><p class="first">Induced Velocity Factor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.5&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>rho</strong></dt>
+<dd><p class="first">air density</p>
+<ul class="last simple">
+<li>default:  &#8216;1.225&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;kg/m**3&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>Cp</strong></dt>
+<dd><p class="first">Power Coefficient</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>Ct</strong></dt>
+<dd><p class="first">Thrust Coefficient</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>Vd</strong></dt>
+<dd><p class="first">Slipstream air velocity, dowstream of rotor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>Vr</strong></dt>
+<dd><p class="first">Air velocity at rotor exit plane</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>power</strong></dt>
+<dd><p class="first">Power produced by the rotor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;W&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>thrust</strong></dt>
+<dd><p class="first">Thrust produced by the rotor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;N&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="nreltraining2013.nreltraining2013.ActuatorDisk.execute">
+<tt class="descname">execute</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#ActuatorDisk.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.ActuatorDisk.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nreltraining2013.nreltraining2013.BEM">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.nreltraining2013.</tt><tt class="descname">BEM</tt><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BEM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BEM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">openmdao.main.assembly.Assembly</span></tt></p>
+<p>Blade Rotor with 3 BladeElements</p>
+<dl class="docutils">
+<dt><em>Int</em> <strong>B</strong></dt>
+<dd><p class="first">number of blades</p>
+<ul class="last simple">
+<li>default:  &#8216;3&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>low:  1</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>chord_hub</strong></dt>
+<dd><p class="first">chord length at the rotor hub</p>
+<ul class="last simple">
+<li>default:  &#8216;0.7&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>low:  0.05</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>chord_tip</strong></dt>
+<dd><p class="first">chord length at the rotor hub</p>
+<ul class="last simple">
+<li>default:  &#8216;0.187&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>low:  0.05</li>
+</ul>
+</dd>
+<dt><em>VarTree</em> <strong>free_stream</strong></dt>
+<dd><ul class="first last simple">
+<li>default:  &#8216;&lt;nreltraining2013.nreltraining2013.FlowConditions object at 0x113448050&gt;&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>copy:  &#8216;deep&#8217;</li>
+<li>vartypename:  &#8216;VarTree&#8217;</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>pitch</strong></dt>
+<dd><p class="first">overall blade pitch</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;deg&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>r_hub</strong></dt>
+<dd><p class="first">blade hub radius</p>
+<ul class="last simple">
+<li>default:  &#8216;0.2&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>low:  0.0</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>r_tip</strong></dt>
+<dd><p class="first">blade tip radius</p>
+<ul class="last simple">
+<li>default:  &#8216;5.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>rpm</strong></dt>
+<dd><p class="first">rotations per minute</p>
+<ul class="last simple">
+<li>default:  &#8216;107.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;min**-1&#8217;</li>
+<li>low:  0.0</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>twist_hub</strong></dt>
+<dd><p class="first">twist angle at the hub radius</p>
+<ul class="last simple">
+<li>default:  &#8216;29.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;deg&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>twist_tip</strong></dt>
+<dd><p class="first">twist angle at the tip radius</p>
+<ul class="last simple">
+<li>default:  &#8216;-3.58&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;deg&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="nreltraining2013.nreltraining2013.BEM.configure">
+<tt class="descname">configure</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BEM.configure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BEM.configure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nreltraining2013.nreltraining2013.AutoBEM">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.nreltraining2013.</tt><tt class="descname">AutoBEM</tt><big>(</big><em>n_elements=6</em><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#AutoBEM"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.AutoBEM" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#nreltraining2013.nreltraining2013.BEM" title="nreltraining2013.nreltraining2013.BEM"><tt class="xref py py-class docutils literal"><span class="pre">nreltraining2013.nreltraining2013.BEM</span></tt></a></p>
+<p>Blade Rotor with user specified number BladeElements</p>
+<dl class="method">
+<dt id="nreltraining2013.nreltraining2013.AutoBEM.configure">
+<tt class="descname">configure</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#AutoBEM.configure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.AutoBEM.configure" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nreltraining2013.nreltraining2013.BladeElement">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.nreltraining2013.</tt><tt class="descname">BladeElement</tt><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BladeElement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BladeElement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">openmdao.main.component.Component</span></tt></p>
+<p>Calculations for a single radial slice of a rotor blade</p>
+<dl class="docutils">
+<dt><em>Int</em> <strong>B</strong></dt>
+<dd><p class="first">Number of blade elements</p>
+<ul class="last simple">
+<li>default:  &#8216;3&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>V_inf</strong></dt>
+<dd><p class="first">free stream air velocity</p>
+<ul class="last simple">
+<li>default:  &#8216;7.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>a_init</strong></dt>
+<dd><p class="first">initial guess for axial inflow factor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.2&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>b_init</strong></dt>
+<dd><p class="first">initial guess for angular inflow factor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.01&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>chord</strong></dt>
+<dd><p class="first">local chord length</p>
+<ul class="last simple">
+<li>default:  &#8216;0.1872796&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>low:  0.0</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>dr</strong></dt>
+<dd><p class="first">width of the blade element</p>
+<ul class="last simple">
+<li>default:  &#8216;1.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>r</strong></dt>
+<dd><p class="first">mean radius of the blade element</p>
+<ul class="last simple">
+<li>default:  &#8216;5.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>rho</strong></dt>
+<dd><p class="first">air density</p>
+<ul class="last simple">
+<li>default:  &#8216;1.225&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;kg/m**3&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>rpm</strong></dt>
+<dd><p class="first">rotations per minute</p>
+<ul class="last simple">
+<li>default:  &#8216;106.952&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;min**-1&#8217;</li>
+<li>low:  0.0</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>twist</strong></dt>
+<dd><p class="first">local twist angle</p>
+<ul class="last simple">
+<li>default:  &#8216;1.616&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;rad&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>V_0</strong></dt>
+<dd><p class="first">axial flow at propeller disk</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>V_1</strong></dt>
+<dd><p class="first">local flow velocity</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>V_2</strong></dt>
+<dd><p class="first">angular flow at propeller disk</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;m/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>a</strong></dt>
+<dd><p class="first">converged value for axial inflow factor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>alpha</strong></dt>
+<dd><p class="first">local angle of attack</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;rad&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>b</strong></dt>
+<dd><p class="first">converged value for radial inflow factor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>delta_Cp</strong></dt>
+<dd><p class="first">section power coefficent</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>delta_Ct</strong></dt>
+<dd><p class="first">section thrust coefficient</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;N&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>lambda_r</strong></dt>
+<dd><p class="first">local tip speed ratio</p>
+<ul class="last simple">
+<li>default:  &#8216;8.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>omega</strong></dt>
+<dd><p class="first">average angular velocity for element</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;rad/s&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>phi</strong></dt>
+<dd><p class="first">relative flow angle onto blades</p>
+<ul class="last simple">
+<li>default:  &#8216;1.487&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>units: &#8216;rad&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>sigma</strong></dt>
+<dd><p class="first">Local solidity</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="nreltraining2013.nreltraining2013.BladeElement.execute">
+<tt class="descname">execute</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BladeElement.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BladeElement.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nreltraining2013.nreltraining2013.BEMPerf">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.nreltraining2013.</tt><tt class="descname">BEMPerf</tt><big>(</big><em>n=10</em><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BEMPerf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BEMPerf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">openmdao.main.component.Component</span></tt></p>
+<p>collects data from set of BladeElements and calculates aggregate values</p>
+<dl class="docutils">
+<dt><em>VarTree</em> <strong>free_stream</strong></dt>
+<dd><ul class="first last simple">
+<li>default:  &#8216;&lt;nreltraining2013.nreltraining2013.FlowConditions object at 0x11336cf50&gt;&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>copy:  &#8216;deep&#8217;</li>
+<li>vartypename:  &#8216;VarTree&#8217;</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>r</strong></dt>
+<dd><p class="first">tip radius of the rotor</p>
+<ul class="last simple">
+<li>default:  &#8216;0.8&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;m&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  False</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>rpm</strong></dt>
+<dd><p class="first">rotations per minute</p>
+<ul class="last simple">
+<li>default:  &#8216;2100.0&#8217;</li>
+<li>iotype:  &#8216;in&#8217;</li>
+<li>units: &#8216;min**-1&#8217;</li>
+<li>low:  0.0</li>
+</ul>
+</dd>
+<dt><em>VarTree</em> <strong>data</strong></dt>
+<dd><ul class="first last simple">
+<li>default:  &#8216;&lt;nreltraining2013.nreltraining2013.BEMPerfData object at 0x11336cfb0&gt;&#8217;</li>
+<li>iotype:  &#8216;out&#8217;</li>
+<li>copy:  &#8216;deep&#8217;</li>
+<li>vartypename:  &#8216;VarTree&#8217;</li>
+</ul>
+</dd>
+</dl>
+<dl class="method">
+<dt id="nreltraining2013.nreltraining2013.BEMPerf.execute">
+<tt class="descname">execute</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BEMPerf.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BEMPerf.execute" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nreltraining2013.nreltraining2013.BEMPerfData">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.nreltraining2013.</tt><tt class="descname">BEMPerfData</tt><big>(</big><em>iotype=''</em><big>)</big><a class="reference internal" href="_modules/nreltraining2013/nreltraining2013.html#BEMPerfData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.nreltraining2013.BEMPerfData" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">openmdao.main.vartree.VariableTree</span></tt></p>
+<p>Container that holds all rotor performance data</p>
+<dl class="docutils">
+<dt><em>Float</em> <strong>Cp</strong></dt>
+<dd><p class="first">power coefficient</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>Ct</strong></dt>
+<dd><p class="first">thrust coefficient</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>J</strong></dt>
+<dd><p class="first">advance ratio</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>net_power</strong></dt>
+<dd><p class="first">net power produced</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>units: &#8216;W&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>net_thrust</strong></dt>
+<dd><p class="first">net axial thrust</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>units: &#8216;N&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+<dt><em>Float</em> <strong>tip_speed_ratio</strong></dt>
+<dd><p class="first">tip speed ratio</p>
+<ul class="last simple">
+<li>default:  &#8216;0.0&#8217;</li>
+<li>vartypename:  &#8216;Float&#8217;</li>
+<li>assumed_default:  True</li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-nreltraining2013.test.test_nreltraining">
+<span id="test-nreltraining-py"></span><span id="nreltraining2013-test-test-nreltraining-py"></span><span id="index-1"></span><h2>test_nreltraining.py<a class="headerlink" href="#module-nreltraining2013.test.test_nreltraining" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.test.test_nreltraining.</tt><tt class="descname">ActuatorDiskTestCase</tt><big>(</big><em>methodName='runTest'</em><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#ActuatorDiskTestCase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">unittest.case.TestCase</span></tt></p>
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.setUp">
+<tt class="descname">setUp</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#ActuatorDiskTestCase.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.setUp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.tearDown">
+<tt class="descname">tearDown</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#ActuatorDiskTestCase.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.test_ActuatorDisk">
+<tt class="descname">test_ActuatorDisk</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#ActuatorDiskTestCase.test_ActuatorDisk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.ActuatorDiskTestCase.test_ActuatorDisk" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="nreltraining2013.test.test_nreltraining.AutoBEMTestCase">
+<em class="property">class </em><tt class="descclassname">nreltraining2013.test.test_nreltraining.</tt><tt class="descname">AutoBEMTestCase</tt><big>(</big><em>methodName='runTest'</em><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#AutoBEMTestCase"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.AutoBEMTestCase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">unittest.case.TestCase</span></tt></p>
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.AutoBEMTestCase.setUp">
+<tt class="descname">setUp</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#AutoBEMTestCase.setUp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.setUp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.AutoBEMTestCase.tearDown">
+<tt class="descname">tearDown</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#AutoBEMTestCase.tearDown"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.tearDown" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.AutoBEMTestCase.test_AutoBEM_DOE">
+<tt class="descname">test_AutoBEM_DOE</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#AutoBEMTestCase.test_AutoBEM_DOE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.test_AutoBEM_DOE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="nreltraining2013.test.test_nreltraining.AutoBEMTestCase.test_AutoBEM_Opt">
+<tt class="descname">test_AutoBEM_Opt</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/nreltraining2013/test/test_nreltraining.html#AutoBEMTestCase.test_AutoBEM_Opt"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#nreltraining2013.test.test_nreltraining.AutoBEMTestCase.test_AutoBEM_Opt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Source Documentation</a><ul>
+<li><a class="reference internal" href="#module-nreltraining2013.nreltraining2013">nreltraining2013.py</a></li>
+<li><a class="reference internal" href="#module-nreltraining2013.test.test_nreltraining">test_nreltraining.py</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="bem_design.html"
+                        title="previous chapter">Design a Wind Turbine</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="pkgdocs.html"
+                        title="next chapter">Package Metadata</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/srcdocs.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="pkgdocs.html" title="Package Metadata"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="bem_design.html" title="Design a Wind Turbine"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>

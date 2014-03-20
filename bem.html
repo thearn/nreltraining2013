@@ -1,0 +1,574 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>More Complex Wind Turbine Model - BEM Theory &mdash; nreltraining2013 1.5 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.5',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="nreltraining2013 1.5 documentation" href="index.html" />
+    <link rel="next" title="Design a Wind Turbine" href="bem_design.html" />
+    <link rel="prev" title="Recording Data from your Runs" href="recording_data.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bem_design.html" title="Design a Wind Turbine"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="recording_data.html" title="Recording Data from your Runs"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="more-complex-wind-turbine-model-bem-theory">
+<h1>More Complex Wind Turbine Model - BEM Theory<a class="headerlink" href="#more-complex-wind-turbine-model-bem-theory" title="Permalink to this headline">¶</a></h1>
+<p>In this part of the tutorial we&#8217;ll build a much more complex (and interesting)
+model for a wind turbine. We&#8217;re going to use Blade Element Momentum (BEM) theory
+to account for the actual geometry of a wind turbine in our analysis.</p>
+<p>We&#8217;re going to build our more complex model as an OpenMDAO Assembly and make use of
+a number of OpenMDAO&#8217;s more advanced features:</p>
+<ul class="simple">
+<li>VariableTrees for data encapsulation</li>
+<li>Automatic unit conversions between Components</li>
+<li>Assembly-level variables</li>
+<li>Assemblies as Components</li>
+</ul>
+<p>After we build the BEM model, we will test it by running a Design of Experiments (DOE)
+and an optimization with it. This should give you a good feel for what more detailed models
+look like in OpenMDAO and how they can be used as components in a larger simulation.</p>
+<p>The BEM analysis can be broken down into two main sub-calculations. First, with BEM
+the rotor blade is broken up into a series of blade elements. Each blade element is
+assumed to be independent from the others. The calculations for an individual blade element
+are the first sub-calculation. Next, the rotor performance
+can be calculated by aggregating the results from all of the blade elements. The rotor
+performance is the second sub-calculation.</p>
+<div class="figure align-center">
+<img alt="_images/bem.png" src="_images/bem.png" />
+</div>
+<p>Each sub-calculation will get handled in its own component class, which we will show you the
+definition of.  But these classes are significantly larger and more complex than the
+ActuatorDisk from earlier. So  if you don&#8217;t want to define them yourself, it&#8217;s fine to just use
+the ones defined from the plugin. We&#8217;re going to  show you the code, just to highlight a few key
+things, and then we&#8217;ll get to building the actual BEM model. If you  want to build the classes
+yourself, just create new files in your project and copy the code we show you into them. Otherwise,
+just read through the component details, and we&#8217;ll get to the assembly construction in the GUI after
+that.</p>
+<div class="section" id="blade-element-component">
+<h2>Blade Element Component<a class="headerlink" href="#blade-element-component" title="Permalink to this headline">¶</a></h2>
+<p>The code for a blade element is below. There are a lot of inputs and outputs, and
+the calculations are not trivial. However, there are a couple of key features to take note of.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span><span class="n">Int</span>
+
+<span class="k">class</span> <span class="nc">BladeElement</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Calculations for a single radial slice of a rotor blade&quot;&quot;&quot;</span>
+
+    <span class="c"># inputs</span>
+    <span class="n">a_init</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;initial guess for axial inflow factor&quot;</span><span class="p">)</span>
+    <span class="n">b_init</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;initial guess for angular inflow factor&quot;</span><span class="p">)</span>
+    <span class="n">rpm</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">106.952</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;rotations per minute&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;min**-1&quot;</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">5.</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;mean radius of the blade element&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">)</span>
+    <span class="n">dr</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;width of the blade element&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">)</span>
+    <span class="n">twist</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.616</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;local twist angle&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;rad&quot;</span><span class="p">)</span>
+    <span class="n">chord</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">1872796</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;local chord length&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Number of blade elements&quot;</span><span class="p">)</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air density&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/m**3&quot;</span><span class="p">)</span>
+    <span class="n">V_inf</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;free stream air velocity&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+
+    <span class="c"># outputs</span>
+    <span class="n">V_0</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;axial flow at propeller disk&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">V_1</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;local flow velocity&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">V_2</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;angular flow at propeller disk&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+    <span class="n">omega</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;average angular velocity for element&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;rad/s&quot;</span><span class="p">)</span>
+    <span class="n">sigma</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Local solidity&quot;</span><span class="p">)</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;local angle of attack&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;rad&quot;</span><span class="p">)</span>
+    <span class="n">delta_Ct</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;section thrust coefficient&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;N&quot;</span><span class="p">)</span>
+    <span class="n">delta_Cp</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;section power coefficent&quot;</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;converged value for axial inflow factor&quot;</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;converged value for radial inflow factor&quot;</span><span class="p">)</span>
+    <span class="n">lambda_r</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;local tip speed ratio&quot;</span><span class="p">)</span>
+    <span class="n">phi</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.487</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;relative flow angle onto blades&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;rad&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BladeElement</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="c"># rough linear interpolation from naca 0012 airfoil data</span>
+        <span class="n">rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">13.</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">])</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cl_interp</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.3</span><span class="p">,</span> <span class="o">.</span><span class="mi">8</span><span class="p">,</span> <span class="o">.</span><span class="mi">7</span><span class="p">,</span> <span class="mf">1.1</span><span class="p">],</span> <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="n">rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">])</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">180</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cd_interp</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">bounds_error</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_coeff_lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="n">C_L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cl_interp</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="n">C_D</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cd_interp</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">C_D</span><span class="p">,</span> <span class="n">C_L</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">chord</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">omega</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rpm</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mf">60.0</span>
+        <span class="n">omega_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omega</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">omega</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">V_inf</span>  <span class="c"># need lambda_r for iterates</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">fsolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_iteration</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">a_init</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b_init</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">V_inf</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">V_inf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_2</span> <span class="o">=</span> <span class="n">omega_r</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="o">*</span><span class="n">omega_r</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">V_1</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V_0</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">V_2</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**.</span><span class="mi">5</span>
+
+        <span class="n">q_c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span><span class="o">*.</span><span class="mi">5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">V_1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">chord</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">dr</span>
+        <span class="n">cos_phi</span> <span class="o">=</span> <span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">)</span>
+        <span class="n">sin_phi</span> <span class="o">=</span> <span class="n">sin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">)</span>
+        <span class="n">C_D</span><span class="p">,</span> <span class="n">C_L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coeff_lookup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_Ct</span> <span class="o">=</span> <span class="n">q_c</span><span class="o">*</span><span class="p">(</span><span class="n">C_L</span><span class="o">*</span><span class="n">cos_phi</span><span class="o">-</span><span class="n">C_D</span><span class="o">*</span><span class="n">sin_phi</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">rho</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">V_inf</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta_Cp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">C_D</span><span class="o">/</span><span class="n">C_L</span><span class="o">*</span><span class="n">tan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_iteration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">phi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">pi</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">twist</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span>
+        <span class="n">C_D</span><span class="p">,</span> <span class="n">C_L</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coeff_lookup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a</span> <span class="o">=</span> <span class="mf">1.</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">4.</span><span class="o">*</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="o">*</span><span class="n">C_L</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="o">*</span><span class="n">C_L</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">phi</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">),</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Notice that one of the inputs is not a Float.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">B</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;Number of blade elements&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><cite>B</cite> is an integer, but it still takes similar arguments to a Float.
+There are a lot of different kinds of OpenMDAO variables, including Enum, Array, Complex, and Str.
+If none of the built-in types meet your needs you can <a class="reference external" href="http://openmdao.org/docs/plugin-guide/variable_plugin.html">define your own custom variables.</a></p>
+<p>The <tt class="docutils literal"><span class="pre">__init__</span></tt> method is defined for this component, which handles a bunch of things
+that need to get done to initialize it for the analysis, like setting up some airfoil data. There are two
+other functions that are defined as well. <tt class="docutils literal"><span class="pre">_iteration</span></tt> and <tt class="docutils literal"><span class="pre">_coeff_lookup</span></tt> are both internal helper
+functions for BladeElement. The <tt class="docutils literal"><span class="pre">_iteration</span></tt> function is responsible for converging on the correct values
+for axial and tangential induction factors. This iteration is called for by BEM theory.</p>
+</div>
+<div class="section" id="rotor-performance-component">
+<h2>Rotor Performance Component<a class="headerlink" href="#rotor-performance-component" title="Permalink to this headline">¶</a></h2>
+<p>A rotor is made up from a set of blade elements. To calculate rotor performance data from each
+element we will define a new BEMperf class. This class is a lot simpler than BladeElement, but
+it also makes use of a few more features of OpenMDAO. So it has a couple of helper classes
+that go along with it.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Component</span><span class="p">,</span> <span class="n">VariableTree</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span>
+
+
+<span class="k">class</span> <span class="nc">FlowConditions</span><span class="p">(</span><span class="n">VariableTree</span><span class="p">):</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air density&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/m**3&quot;</span><span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">7.</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;free stream air velocity&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">BEMPerfData</span><span class="p">(</span><span class="n">VariableTree</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Container that holds all rotor performance data&quot;&quot;&quot;</span>
+
+    <span class="n">net_thrust</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s">&quot;net axial thrust&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;N&quot;</span><span class="p">)</span>
+    <span class="n">net_power</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s">&quot;net power produced&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;W&quot;</span><span class="p">)</span>
+    <span class="n">Ct</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s">&quot;thrust coefficient&quot;</span><span class="p">)</span>
+    <span class="n">Cp</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s">&quot;power coefficient&quot;</span><span class="p">)</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s">&quot;advance ratio&quot;</span><span class="p">)</span>
+    <span class="n">tip_speed_ratio</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="n">desc</span><span class="o">=</span><span class="s">&quot;tip speed ratio&quot;</span><span class="p">)</span>
+    <span class="c">#eta = Float(desc=&quot;turbine efficiency&quot;)</span>
+
+
+<span class="k">class</span> <span class="nc">BEMPerf</span><span class="p">(</span><span class="n">Component</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;collects data from set of BladeElements and calculates aggregate values&quot;&quot;&quot;</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">8</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;tip radius of the rotor&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">)</span>
+    <span class="n">rpm</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">2100</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;rotations per minute&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;min**-1&quot;</span><span class="p">)</span>
+
+    <span class="n">free_stream</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">FlowConditions</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">BEMPerfData</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;out&quot;</span><span class="p">)</span>
+
+    <span class="c"># this lets the size of the arrays vary for different numbers of elements</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BEMPerf</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+
+        <span class="c"># needed initialization for VTs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="n">BEMPerfData</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;free_stream&#39;</span><span class="p">,</span> <span class="n">FlowConditions</span><span class="p">())</span>
+
+        <span class="c"># array size based on number of elements</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;delta_Ct&#39;</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;thrusts from </span><span class="si">%d</span><span class="s"> different blade elements&#39;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>
+                               <span class="n">default_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Float</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;N&quot;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;delta_Cp&#39;</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;Cp integrant points from </span><span class="si">%d</span><span class="s"> different blade elements&#39;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>
+                               <span class="n">default_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Float</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;lambda_r&#39;</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;lambda_r from </span><span class="si">%d</span><span class="s"> different blade elements&#39;</span> <span class="o">%</span> <span class="n">n</span><span class="p">,</span>
+                               <span class="n">default_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Float</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">BEMPerfData</span><span class="p">()</span>  <span class="c"># empty the variable tree</span>
+
+        <span class="n">V_inf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_stream</span><span class="o">.</span><span class="n">V</span>
+        <span class="n">rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_stream</span><span class="o">.</span><span class="n">rho</span>
+
+        <span class="n">norm</span> <span class="o">=</span> <span class="p">(</span><span class="o">.</span><span class="mi">5</span><span class="o">*</span><span class="n">rho</span><span class="o">*</span><span class="p">(</span><span class="n">V_inf</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Ct</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_Ct</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">net_thrust</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Ct</span><span class="o">*</span><span class="n">norm</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Cp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta_Cp</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span><span class="p">)</span> <span class="o">*</span> <span class="mf">8.</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambda_r</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">**</span><span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">net_power</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">Cp</span><span class="o">*</span><span class="n">norm</span><span class="o">*</span><span class="n">V_inf</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">J</span> <span class="o">=</span> <span class="n">V_inf</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rpm</span><span class="o">/</span><span class="mf">60.0</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">)</span>
+
+        <span class="n">omega</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rpm</span><span class="o">*</span><span class="mi">2</span><span class="o">*</span><span class="n">pi</span><span class="o">/</span><span class="mi">60</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tip_speed_ratio</span> <span class="o">=</span> <span class="n">omega</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">free_stream</span><span class="o">.</span><span class="n">V</span>
+</pre></div>
+</div>
+<p>The two classes, FlowConditions and BEMPerfData, both inherit from VariableTree. In OpenMDAO,
+VariableTree is the base class you should use if you want to pass around any kind of object that is
+more  complicated than a simple scalar value or an array. These VariableTree sub-classes provide a
+convenient way  of grouping related variables together, and they can serve as datatypes that are
+declared as part of the i/o  for any component.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FlowConditions</span><span class="p">(</span><span class="n">VariableTree</span><span class="p">):</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air density&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/m**3&quot;</span><span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">7.</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;free stream air velocity&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Inside FlowConditions there are two variables. Just like before, they have a default value, a
+description, and some  units defined. Notably missing, however, is an <em>iostatus</em>. When you are
+defining the VariableTree sub-class, iostatus is not yet  relevant. When added to a component, the
+variable tree iostatus as a whole could be specified as input or as output. Iostatus is defined
+when the class is used as i/o in a component, not before. For our BEMPerf component, we use an
+instance of FlowConditions called <tt class="docutils literal"><span class="pre">free_stream</span></tt>.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">free_stream</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">FlowConditions</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The initialization method for the BEMPerf component is a bit different than the one for BladeElement as well.
+Notice that <tt class="docutils literal"><span class="pre">free_stream</span></tt> and <tt class="docutils literal"><span class="pre">data</span></tt> (the two VaraibleTree class type i/o variables) are initialized.
+You always need to initialize a VariableTree when used in a component. You just need to put an empty instance of the proper class
+there with the <tt class="docutils literal"><span class="pre">add</span></tt> method of the component.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="c"># needed initialization for VTs</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;data&#39;</span><span class="p">,</span> <span class="n">BEMPerfData</span><span class="p">())</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;free_stream&#39;</span><span class="p">,</span> <span class="n">FlowConditions</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>In the definition of the <tt class="docutils literal"><span class="pre">__init__</span></tt> method there is an optional argument <tt class="docutils literal"><span class="pre">n_elements</span></tt>, which defaults to 10 if
+not otherwise specified. This argument is used to define some Array variables, which have a specified size. The size
+needs to change depending on how many BladeElement instances you need to get data from, so you have to define these
+variables during the initialization. The <tt class="docutils literal"><span class="pre">add</span></tt> method is used to create these traits on the fly.
+Notice that like Float, Array type variables can have units defined as well. The unit applies to all
+members of the array at the same time.</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;delta_T&#39;</span><span class="p">,</span> <span class="n">Array</span><span class="p">(</span><span class="n">iotype</span><span class="o">=</span><span class="s">&#39;in&#39;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&#39;thrusts from </span><span class="si">%d</span><span class="s"> different blade elements&#39;</span><span class="o">%</span><span class="n">n</span><span class="p">,</span>
+                          <span class="n">default_value</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">n</span><span class="p">,)),</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">n</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">Float</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;N&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="bem-rotor-assembly">
+<h2>BEM Rotor Assembly<a class="headerlink" href="#bem-rotor-assembly" title="Permalink to this headline">¶</a></h2>
+<p>Now that we&#8217;ve defined the two primary components, we can create an assembly that uses them to
+model a wind turbine. The component definition requires some coding, but this plugin has already
+provided that for you. So create a new project in the OpenMDAO GUI, add a top assembly and then
+filter the Library tab with <cite>nrel.</cite>  You should see all of the classes defined above show up
+there, as well as two more: BEM and AutoBEM.</p>
+<p>We&#8217;ll get to BEM and AutoBEM in a bit, but first we&#8217;re going to test out the BladeElement and
+BEMPerf  components. From the Library, drag <tt class="docutils literal"><span class="pre">BladeElement</span></tt> into the <tt class="docutils literal"><span class="pre">top</span></tt> assembly, and give it
+the name <em>BE0</em>. Then double-click on the newly-created instance and take a moment to  make sure all
+the inputs and outputs are there. You could run this component by itself, but that&#8217;s not very
+interesting.  Create two more instances of <tt class="docutils literal"><span class="pre">BladeElement</span></tt> and name them <em>BE1</em> and <em>BE2</em>. Now you
+have three BladeElements, so  create a <tt class="docutils literal"><span class="pre">BEMPerf</span></tt> instance named <em>perf</em> and set the number of
+elements to 3 when prompted.</p>
+<p>Now you want to connect the BladeElement instances and the BEMPerfComponent. Click and drag from the
+small green circle on the right of <em>BE0</em> to small circle on the top of <em>perf</em>. This will bring up the
+connection window.</p>
+<div class="figure align-center">
+<img alt="_images/connection.png" src="_images/connection.png" />
+</div>
+<p>We want to connect three variables from <em>BE0</em> to <em>perf</em>:</p>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">BE0.delta_Ct</span></tt> to <tt class="docutils literal"><span class="pre">perf.delta_Ct[0]</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">BE0.delta_Cp</span></tt> to <tt class="docutils literal"><span class="pre">perf.delta_Cp[0]</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">BE0.lambda_r</span></tt> to <tt class="docutils literal"><span class="pre">perf.lambda_r[0]</span></tt></li>
+</ul>
+<p>Just start typing each source and target name into the right and left input fields  respectively,
+and select the variable from the suggestions when you see it pop up. Then click <tt class="docutils literal"><span class="pre">Connect</span></tt>. When
+each connection is made, it will get drawn in the window so you can see it.  When you&#8217;re done, it
+will look like this:</p>
+<div class="figure align-center">
+<img alt="_images/connection_dialog.png" src="_images/connection_dialog.png" />
+</div>
+<p>Go ahead and create similar connections for the other two BladeSegments, remembering to increment
+the array index to <em>1</em> and then <em>2</em> for each one.  As the connections are made, you should see the
+dataflow react by drawing dependency arrows between each of the BladeElements and the perf
+component. These will be black, indicating that there is an  explicit data dependency. OpenMDAO
+strictly enforces explicit connections so that if you tried to set a  value into a connected input,
+you would get an error. Similarly, you can&#8217;t give a connected input as a parameter  to a driver. The
+driver cannot vary that value since it&#8217;s explicitly connected to something else.</p>
+<p>Now you&#8217;ve connected up your model. You&#8217;re ready to run it, right? Well, not quite yet. For one
+thing, your BladeElement instances all have default values for their inputs. It does not make much
+sense to have  all three of them set to the same radius, twist, chord, etc. But let&#8217;s pretend you set
+some  carefully picked values into each of them, just for the sake of argument. So now are you ready
+to run? Try it.</p>
+<p>Right-click on the <tt class="docutils literal"><span class="pre">top</span></tt> assembly and select <tt class="docutils literal"><span class="pre">Run</span></tt> from the menu. The assembly and the driver will
+both turn  green, but none of the other components will. Why not? Well, take a look at the workflow.
+Even though you connected  all your components properly and (theoretically) set some good values into
+the inputs, you never added anything to the workflow.</p>
+<div class="figure align-center">
+<img alt="_images/empty_workflow.png" src="_images/empty_workflow.png" />
+</div>
+<p>The last time you did not have to put anything into the assembly&#8217;s workflow yourself, it
+just happened automatically.  That automatic workflow came from adding parameters to the
+driver. When you did that, OpenMDAO figured out that if the driver  was going to vary some
+values, then the components attached to them would need to be executed. In this case
+though, we&#8217;ve  not done anything to the driver. In fact, it&#8217;s just the default RunOnce
+driver which can&#8217;t even accept any parameters or  objectives. So the workflow will need to
+be created manually. Drag each of the components into the left side&#8217;s Workflow tab and
+then tell the assembly to run again. Now, all of the components will execute.</p>
+<div class="figure align-center">
+<img alt="_images/full_workflow.png" src="_images/full_workflow.png" />
+</div>
+</div>
+<div class="section" id="bem-rotor-as-a-nested-assembly">
+<h2>BEM Rotor as a Nested Assembly<a class="headerlink" href="#bem-rotor-as-a-nested-assembly" title="Permalink to this headline">¶</a></h2>
+<p>If you were really using BEM to do the aerodynamic design for a wind turbine,
+then you&#8217;d be working with a  whole design team. The team would probably want to run your
+aerodynamic analysis as part of a larger model of the actual  wind turbine system. Since
+OpenMDAO&#8217;s Assembly class is a sub-class  of Component, you can add i/o to an assembly and
+use it as a component in a larger model.</p>
+<p>So let&#8217;s take a look at what the i/o for BEM analysis would look like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">openmdao.main.api</span> <span class="kn">import</span> <span class="n">Assembly</span>
+<span class="kn">from</span> <span class="nn">openmdao.lib.datatypes.api</span> <span class="kn">import</span> <span class="n">Float</span><span class="p">,</span> <span class="n">Int</span>
+
+<span class="k">class</span> <span class="nc">FlowConditions</span><span class="p">(</span><span class="n">VariableTree</span><span class="p">):</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.225</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;air density&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;kg/m**3&quot;</span><span class="p">)</span>
+    <span class="n">V</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">7.</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;free stream air velocity&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m/s&quot;</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">BEM</span><span class="p">(</span><span class="n">Assembly</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Blade Rotor with 3 BladeElements&quot;&quot;&quot;</span>
+
+    <span class="c"># physical properties inputs</span>
+    <span class="n">r_hub</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;blade hub radius&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">twist_hub</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">29</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;twist angle at the hub radius&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;deg&quot;</span><span class="p">)</span>
+    <span class="n">chord_hub</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">7</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;chord length at the rotor hub&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=.</span><span class="mo">05</span><span class="p">)</span>
+    <span class="n">r_tip</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;blade tip radius&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">)</span>
+    <span class="n">twist_tip</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">-</span><span class="mf">3.58</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;twist angle at the tip radius&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;deg&quot;</span><span class="p">)</span>
+    <span class="n">chord_tip</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="o">.</span><span class="mi">187</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;chord length at the rotor hub&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;m&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=.</span><span class="mo">05</span><span class="p">)</span>
+    <span class="n">pitch</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;overall blade pitch&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;deg&quot;</span><span class="p">)</span>
+    <span class="n">rpm</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mi">107</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;rotations per minute&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;min**-1&quot;</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">Int</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;number of blades&quot;</span><span class="p">,</span> <span class="n">low</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c"># wind condition inputs</span>
+    <span class="n">free_stream</span> <span class="o">=</span> <span class="n">VarTree</span><span class="p">(</span><span class="n">FlowConditions</span><span class="p">(),</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">BEM</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;free_stream&#39;</span><span class="p">,</span> <span class="n">FlowConditions</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;BE0&#39;</span><span class="p">,</span> <span class="n">BladeElement</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;BE1&#39;</span><span class="p">,</span> <span class="n">BladeElement</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;BE2&#39;</span><span class="p">,</span> <span class="n">BladeElement</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s">&#39;perf&#39;</span><span class="p">,</span> <span class="n">BEMPerf</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE0.delta_Ct&#39;</span><span class="p">,</span> <span class="s">&#39;perf.delta_Ct[0]&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE0.delta_Cp&#39;</span><span class="p">,</span> <span class="s">&#39;perf.delta_Cp[0]&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE0.lambda_r&#39;</span><span class="p">,</span> <span class="s">&#39;perf.lambda_r[0]&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE1.delta_Ct&#39;</span><span class="p">,</span> <span class="s">&#39;perf.delta_Ct[1]&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE1.delta_Cp&#39;</span><span class="p">,</span> <span class="s">&#39;perf.delta_Cp[1]&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE1.lambda_r&#39;</span><span class="p">,</span> <span class="s">&#39;perf.lambda_r[1]&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE2.delta_Ct&#39;</span><span class="p">,</span> <span class="s">&#39;perf.delta_Ct[2]&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE2.delta_Cp&#39;</span><span class="p">,</span> <span class="s">&#39;perf.delta_Cp[2]&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;BE2.lambda_r&#39;</span><span class="p">,</span> <span class="s">&#39;perf.lambda_r[2]&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">workflow</span><span class="o">.</span><span class="n">add</span><span class="p">([</span><span class="s">&#39;BE0&#39;</span><span class="p">,</span> <span class="s">&#39;BE1&#39;</span><span class="p">,</span> <span class="s">&#39;BE2&#39;</span><span class="p">,</span> <span class="s">&#39;perf&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This code looks really similar to the previous component code we defined, except that our
+class  inherits from Assembly instead of Component. We&#8217;ve defined 9 scalar input design
+variables and one  VariableTree that holds an additional 2 scalar inputs that deal with the
+wind conditions the turbine would  operate in. We also pre-defined the 3 BladeElement
+components, the BEMPerf component, connected them  all, and added them to the workflow. This
+way, you don&#8217;t need to re-do all the connections by hand.</p>
+<p>Create another new project in the OpenMDAO GUI. Create a <tt class="docutils literal"><span class="pre">top</span></tt> assembly. Filter the Library
+with <cite>nrel</cite> again  and create an instance of the <tt class="docutils literal"><span class="pre">BEM</span></tt> assembly inside <tt class="docutils literal"><span class="pre">top</span></tt>.
+We named our instance <cite>bem</cite>. Your workspace will look like this when you&#8217;re done:</p>
+<div class="figure align-center">
+<img alt="_images/bem_workspace.png" src="_images/bem_workspace.png" />
+</div>
+<p>You can click on the small <tt class="docutils literal"><span class="pre">+</span></tt> in the upper right corner of <tt class="docutils literal"><span class="pre">bem</span></tt> to see the contents of
+your  newly created assembly.</p>
+<div class="figure align-center">
+<img alt="_images/bem_workspace_expanded.png" src="_images/bem_workspace_expanded.png" />
+</div>
+<p>You have an assembly with i/o and components connected and hooked up to a workflow. But you
+still need to  connect the assembly i/o to the components it holds. There are two ways you can
+do that. The first way, assuming you have existing variables defined like the inputs we
+created, is to again use the connection editor. Right-click somewhere in the assembly and
+select <tt class="docutils literal"><span class="pre">Edit</span> <span class="pre">Data</span> <span class="pre">Connections</span></tt> from the menu. This will bring up the  connection window.
+This time, leave the source as <tt class="docutils literal"><span class="pre">--</span> <span class="pre">Assembly</span> <span class="pre">--</span></tt> but set the target to <em>BE0</em>. Now  you can
+connect the <cite>rho</cite> and <cite>V</cite> variables from the <tt class="docutils literal"><span class="pre">free_stream</span></tt> VariableTree and the <cite>B</cite>
+variable  to the corresponding variables in the BladeElement. Repeat that for <cite>BE1,
+BE2</cite>, and <cite>perf.</cite></p>
+<p>We&#8217;re almost done, but we still need to deal with chord, radius, and twist. Chord and radius
+are pretty straightforward, but if you look at twist carefully, you will see a small problem.
+For the BladeElement, twist is given in radians, but in the BEM assembly, it&#8217;s defined in
+degrees.</p>
+<p>Twist in the Rotor Assembly:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">twist_tip</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">93.58</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;twist angle at the tip radius&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;deg&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Twist in the Blade Element:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">twist</span> <span class="o">=</span> <span class="n">Float</span><span class="p">(</span><span class="mf">1.616</span><span class="p">,</span> <span class="n">iotype</span><span class="o">=</span><span class="s">&quot;in&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s">&quot;local pitch angle&quot;</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="s">&quot;rad&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Fortunately, OpenMDAO can easily handle this situation.  When you try to connect two variables
+of different but compatible units, OpenMDAO will convert them for you on the fly. But if you
+try to connect two variables with incompatible units, you&#8217;ll get an error.  Give it a shot.
+Try to connect the <tt class="docutils literal"><span class="pre">radius_hub</span></tt> variable from the assembly to <tt class="docutils literal"><span class="pre">BE0.twist</span></tt>. You&#8217;ll get an
+error.  Then try to connect <tt class="docutils literal"><span class="pre">twist_hub</span></tt> to <tt class="docutils literal"><span class="pre">BE0.twist</span></tt>. That will work just fine.</p>
+<div class="figure align-center">
+<img alt="_images/twist_connection.png" src="_images/twist_connection.png" />
+</div>
+<p>Connecting the hub and tip variables to <em>BE0</em> and <em>BE2</em> only gets us part of the way there. We still
+need to  deal with <em>BE1</em> or potentially more intermediate BladeSegments if we had them. Let&#8217;s assume
+that this rotor  has a linear distribution for chord and twist. We&#8217;ll also space the blade segment
+radii out linearly from the  root to the tip. OpenMDAO provides a utility class for this called
+<cite>LinearDistribution</cite>. If you filter  the Library with <cite>linear,</cite> you&#8217;ll see it. You can create one
+called <tt class="docutils literal"><span class="pre">twist_dist</span></tt>. When asked, set the  number of elements to 3 and the units to <tt class="docutils literal"><span class="pre">'deg'</span></tt> (make
+sure you add the quotes!). You don&#8217;t have to specify units on a LinearDistribution, but  in this
+case it&#8217;s necessary to ensure proper unit conversion. Then you can connect the <tt class="docutils literal"><span class="pre">twist_hub</span></tt> and
+<tt class="docutils literal"><span class="pre">twist_tip</span></tt> variables from the assembly to the <tt class="docutils literal"><span class="pre">twist_dist.start</span></tt> and <tt class="docutils literal"><span class="pre">twist_dist.end</span></tt>
+variables.</p>
+<div class="figure align-center">
+<img alt="_images/assembly_to_twist.png" src="_images/assembly_to_twist.png" />
+</div>
+<p>Now you can connect the elements from the array <tt class="docutils literal"><span class="pre">twist_dist.output</span></tt> to <tt class="docutils literal"><span class="pre">BE0.twist</span></tt>,
+<tt class="docutils literal"><span class="pre">BE1.twist</span></tt>, and <tt class="docutils literal"><span class="pre">BE2.twist</span></tt>.</p>
+<div class="figure align-center">
+<img alt="_images/twist_be.png" src="_images/twist_be.png" />
+</div>
+<p>Notice that you just connected an item from an array to a scalar variable. OpenMDAO allows this type
+of connection and performs the same kind of units validation that it does for regular scalar to
+scalar connections. Similarly,  you can connect a sub-variable from within a VariableTree to a
+scalar variable on another component. In fact, we did just that by connecting <tt class="docutils literal"><span class="pre">free_stream.rho</span></tt> to
+<tt class="docutils literal"><span class="pre">BE0.rho</span></tt>, <tt class="docutils literal"><span class="pre">BE1.rho</span></tt>, and <tt class="docutils literal"><span class="pre">BE2.rho</span></tt>.</p>
+<p>At this point, we&#8217;re almost done. We still need to add LinearDistribution instances for the chord
+and radius values. We also  have a few more assembly-level connections to make. You might have
+noticed that the assembly does not have any outputs. So far we&#8217;ve only created inputs. We said there
+were two ways to create assembly-level variables. The first is to manually  create them and then
+issue connections, like we just explored. The second way is to use a passthrough. Right-click on
+the  assembly and select <tt class="docutils literal"><span class="pre">Edit</span> <span class="pre">Passthroughs</span></tt> from the menu.</p>
+<div class="figure align-center">
+<img alt="_images/passthroughs.png" src="_images/passthroughs.png" />
+</div>
+<p>You can find the <tt class="docutils literal"><span class="pre">perf.data</span></tt> in the outputs column (right side) and check it. This will
+automatically create an assembly-level variable called <em>data</em> and connect it to <tt class="docutils literal"><span class="pre">perf.data</span></tt>.  This
+is really just a shortcut for the first procedure, but it&#8217;s easy to do at runtime if you have some
+components, the  inputs or outputs of which you want to expose at the assembly&#8217;s border. When you
+create a passthrough, it creates an exact copy of the variable, including name and units
+information. If you want to change the units across the boundary, like with the twist variables, you
+have to do that manually.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">More Complex Wind Turbine Model - BEM Theory</a><ul>
+<li><a class="reference internal" href="#blade-element-component">Blade Element Component</a></li>
+<li><a class="reference internal" href="#rotor-performance-component">Rotor Performance Component</a></li>
+<li><a class="reference internal" href="#bem-rotor-assembly">BEM Rotor Assembly</a></li>
+<li><a class="reference internal" href="#bem-rotor-as-a-nested-assembly">BEM Rotor as a Nested Assembly</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="recording_data.html"
+                        title="previous chapter">Recording Data from your Runs</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="bem_design.html"
+                        title="next chapter">Design a Wind Turbine</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/bem.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="bem_design.html" title="Design a Wind Turbine"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="recording_data.html" title="Recording Data from your Runs"
+             >previous</a> |</li>
+        <li><a href="index.html">nreltraining2013 1.5 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright .
+      Last updated on Mar 20, 2014.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
+    </div>
+  </body>
+</html>
