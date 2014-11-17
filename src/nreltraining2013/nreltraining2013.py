@@ -125,9 +125,7 @@ class BEM(Assembly):
     # wind condition inputs
     free_stream = VarTree(FlowConditions(), iotype="in")
 
-    def __init__(self):
-        super(BEM, self).__init__()
-        self.add('free_stream', FlowConditions())
+
 
     def configure(self):
         self.add('BE0', BladeElement())
@@ -164,7 +162,7 @@ class AutoBEM(BEM):
 
     def configure(self):
 
-        self.add('free_stream', FlowConditions())  # initialize
+        self.add('free_stream', VarTree(FlowConditions(), iotype="in"))  # initialize
 
         n_elements = self._n_elements
 
