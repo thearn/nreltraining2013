@@ -40,6 +40,7 @@ class ActuatorDiskTestCase(unittest.TestCase):
         assert_rel_error(self, self.top.ad.Cp, 0.593, 0.005)  # Betz Limit
 
 
+
 class AutoBEMTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -54,12 +55,6 @@ class AutoBEMTestCase(unittest.TestCase):
         # perform a DOE
         self.top.replace('driver', DOEdriver())
         self.top.driver.DOEgenerator = FullFactorial(3)
-        self.top.driver.recorders = [ListCaseRecorder()]
-        self.top.driver.case_outputs = [
-            'b.perf.data.tip_speed_ratio',
-            'b.perf.data.Cp',
-            'b.perf.data.Ct'
-        ]
 
         self.top.driver.add_parameter('b.chord_hub', low=.1, high=2)
         self.top.driver.add_parameter('b.chord_tip', low=.1, high=2)
@@ -69,7 +64,7 @@ class AutoBEMTestCase(unittest.TestCase):
 
         self.top.run()
 
-        self.assertEqual(len(self.top.driver.recorders[0]), 243)
+        self.assertEqual(self.top.b.exec_count, 243)
 
     def test_AutoBEM_Opt(self):
         # perform optimization
